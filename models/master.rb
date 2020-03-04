@@ -179,3 +179,7 @@ end
 class Taskqueues < Sequel::Model(:taskqueues)
 
 end
+
+class NetPackets < Sequel::Model(:netpackets)
+  
+end
