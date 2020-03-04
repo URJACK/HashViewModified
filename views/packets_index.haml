@@ -1,0 +1,34 @@
+!!!
+%html
+  %header
+    %script(src="/js/my.js")
+    %script(src="/js/bootstrap.min.js")
+    
+    :javascript
+      //after each 10 seconds, this is page will try to get new data from the server
+      let GETDATASPAN = 10000;
+      let clock = setInterval(getDataFromServer, GETDATASPAN);
+  %body
+    .container
+      %h1
+
+      %form{'accept-charset' => "UTF-8",action: "/net_packets/search",method: "post"}
+        %div.input-group
+          %div.input-group-prepend
+            %span.input-group-text Input ip or port
+          %input{name: "data",type: "text","aria-label" => "First name",class: "form-control"}
+          %input{type: "submit",value: "Search",class:"btn btn-primary"}
+
+      %table.table.table-bordered.table-hover
+        %thead
+          %tr
+            %th starttime
+            %th stoptime
+            %th srcip
+            %th srcport
+            %th dstip
+            %th dstport
+            %th packets
+            %th{colspan: "3"}
+
+      %a{href: "/home",class: "btn btn-primary"} Add a new packet
