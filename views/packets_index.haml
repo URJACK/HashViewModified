@@ -11,7 +11,7 @@
     .container
       %h1
 
-      %form{'accept-charset' => "UTF-8",action: "/net_packets/search",method: "post"}
+      %form{'accept-charset' => "UTF-8",action: "/packets/search",method: "post"}
         %div.input-group
           %div.input-group-prepend
             %span.input-group-text Input ip or port
@@ -41,4 +41,4 @@
             %th #{packet.dstport}
             %th #{packet.packets}
 
-      %a{href: "/home",class: "btn btn-primary"} Add a new packet
+      %a{href: "/packets/new",class: "btn btn-primary"} Add a new packet

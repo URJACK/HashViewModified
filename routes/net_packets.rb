@@ -4,19 +4,35 @@ get '/packets' do
   haml :packets_index
 end
 
+post '/packets/search' do
+  @data = params[:data]
+  haml :packets_debug
+end
+
+get '/packets/new' do
+  haml :packets_new
+end
+
+post '/packets/create' do
+  @data = params[:starttime].to_s + params[:srcip].to_s + params[:packets].to_s
+  netpacket = NetPackets.new
+  netpacket.starttime = params[:starttime]
+  netpacket.stoptime = params[:stoptime]
+  netpacket.srcip = params[:srcip]
+  netpacket.dstip = params[:dstip]
+  netpacket.srcport = params[:srcport]
+  netpacket.dstport = params[:dstport]
+  netpacket.packets = params[:packets]
+  netpacket.save
+  redirect to("/packets")
+end
+
 get '/debug' do
-  # @wordlist = Wordlists.new
-  # hash = rand(36**8).to_s(36)
-  # wordlist = Wordlists.new
-  # wordlist.type = 'dynamic'
-  # wordlist.scope = 'hashfile'
-  # wordlist.name = 'DYNAMIC [hashfile] - '
-  # wordlist.path = 'control/wordlists/wordlist-' + hash + '.txt'
-  # wordlist.size = 0
-  # wordlist.checksum = nil
-  # wordlist.lastupdated = Time.now
-  # wordlist.save
-  # redirect to("/home")
+  @data = params[:data]
+  haml :packets_debug
+end
+
+get '/debugadd' do
   netpacket = NetPackets.new
   netpacket.starttime = Time.new
   netpacket.stoptime = Time.new + 5

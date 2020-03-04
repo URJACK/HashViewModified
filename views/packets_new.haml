@@ -1,0 +1,47 @@
+!!!
+%html
+  %header
+
+  %body
+    .container
+      %h1 You can add a new packet here
+
+      %form{'accept-charset' => "UTF-8",action: "/packets/create",method: "post"}
+        .input-group
+          .input-group-prepend
+            %span.input-group-text starttime
+            %input{type: "datetime-local",class: "form-control",name: "starttime"}
+        
+        .input-group
+          .input-group-prepend
+            %span.input-group-text stoptime
+            %input{type: "datetime-local",class: "form-control",name: "stoptime"}
+        
+        .input-group
+          .input-group-prepend
+            %span.input-group-text srcip
+            %input{type: "text",class: "form-control",name: "srcip"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text dstip
+            %input{type: "text",class: "form-control",name: "dstip"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text srcport
+            %input{type: "number",class: "form-control",name: "srcport"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text dstport
+            %input{type: "number",class: "form-control",name: "dstport"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text packets
+            %input{type: "number",class: "form-control",name: "packets"}
+        
+        %p
+          %input{type: "submit",class: "btn btn-primary"} Add this into storage
+            
