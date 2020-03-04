@@ -2,7 +2,6 @@
 %html
   %header
     %script(src="/js/my.js")
-    %script(src="/js/bootstrap.min.js")
     
     :javascript
       //after each 10 seconds, this is page will try to get new data from the server
@@ -18,17 +17,28 @@
             %span.input-group-text Input ip or port
           %input{name: "data",type: "text","aria-label" => "First name",class: "form-control"}
           %input{type: "submit",value: "Search",class:"btn btn-primary"}
-
+      %div= @debugindex
       %table.table.table-bordered.table-hover
         %thead
           %tr
-            %th starttime
-            %th stoptime
-            %th srcip
-            %th srcport
-            %th dstip
-            %th dstport
-            %th packets
+            %th id
+            %th lastupdated
+            %th type
+            %th scope
+            %th name
+            %th path
+            %th size
+            %th checksum
             %th{colspan: "3"}
+        - @wordlists.each do |word|
+          %tr
+            %th #{word.id}
+            %th #{word.lastupdated}
+            %th #{word.type}
+            %th #{word.scope}
+            %th #{word.name}
+            %th #{word.path}
+            %th #{word.size}
+            %th #{word.checksum}
 
       %a{href: "/home",class: "btn btn-primary"} Add a new packet
