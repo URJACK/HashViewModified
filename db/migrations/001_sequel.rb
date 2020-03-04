@@ -193,5 +193,17 @@ Sequel.migration do
       String :size, size: 100
       String :checksum, size: 64
     end
+
+    create_table(:netpackets) do
+      primary_key :id, type: :Bignum
+      DateTime :starttime
+      DateTime :stoptime
+      String :srcip, size: 45
+      String :dstip, size: 45
+      Integer :srcport
+      Integer :dstport
+      Integer :packets
+    end
+
   end
 end
