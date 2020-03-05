@@ -45,13 +45,19 @@ post '/packets/update' do
     redirect to("/packets")
   else
     @err = "this sequence is not exist,no id:#{params[:id]}"
-    haml :packets_errorr
+    haml :packets_error
   end
 end
 
 get '/packets/delete' do
-  @data = params[:id]
-  haml :packets_debug
+  netpacket = NetPackets.find(id: params[:id].to_i)
+  if netpacket != nil
+    netpacket.destroy
+    redirect to("/packets")
+  else
+    @err = "this sequence can't be delete, id:#{params[:id]}"
+    haml :packets_error
+  end
 end
 
 get '/debug' do
