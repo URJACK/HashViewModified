@@ -10,9 +10,16 @@ get '/packets' do
   haml :packets_index
 end
 
-post '/packets/search' do
+get '/packets/search' do
   @data = params[:data]
-  haml :packets_debug
+  page = params[:id]
+  if page == nil
+    page = 1
+  end
+  page = page.to_i
+  @netpackets = NetPackets.fetch("SELECT * FROM netpackets WHERE srcip = ? OR srcport = ? OR dstip = ? OR dstport = ? limit ? offset ?;", @data,@data,@data,@data,PageSize,(page - 1) * PageSize)
+  @pageid = page
+  haml :packets_search
 end
 
 get '/packets/new' do
