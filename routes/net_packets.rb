@@ -1,6 +1,12 @@
+PageSize = 5 
 get '/packets' do
-  @netpackets = NetPackets.all
-  @debugindex = @netpackets.length
+  page = params[:id]
+  if page == nil
+    page = 1
+  end
+  page = page.to_i
+  @netpackets = NetPackets.limit(PageSize).offset((page - 1) * PageSize)
+  @pageid = page
   haml :packets_index
 end
 

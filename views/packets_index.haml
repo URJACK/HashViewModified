@@ -17,7 +17,6 @@
             %span.input-group-text Input ip or port
           %input{name: "data",type: "text","aria-label" => "First name",class: "form-control"}
           %input{type: "submit",value: "Search",class:"btn btn-primary"}
-      %div= @debugindex
       %table.table.table-bordered.table-hover
         %thead
           %tr
@@ -44,5 +43,11 @@
               %a{href: "/packets/edit?id=#{packet.id}",class: "btn btn-warning"} Edit
             %th
               %a{href: "/packets/delete?id=#{packet.id}",class: "btn btn-danger"} Delete
+      %p
+        - if @pageid > 1
+          %a{href: "/packets?id=#{@pageid - 1}",class: "btn btn-warning"} Left
+        - else
+          %a{href: "/packets?id=#{@pageid}",class: "btn btn-default"} Left
+        %a{href: "/packets?id=#{@pageid + 1}",class: "btn btn-danger"} Right
 
       %a{href: "/packets/new",class: "btn btn-primary"} Add a new packet
