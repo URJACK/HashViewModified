@@ -1,0 +1,57 @@
+!!!
+%html
+  %header
+    %script(src="/js/my.js")
+    :javascript
+      window.onload = function(){
+        oStart = document.getElementById('starttime');
+        oStop = document.getElementById('stoptime');
+        oStart.value = formatDateTime_1(oStart.defaultValue);
+        oStop.value = formatDateTime_1(oStop.defaultValue);
+      }
+  %body
+    .container
+      %h1 You modify the package's information
+      %form{'accept-charset' => "UTF-8",action: "/packets/update",method: "post"}
+        %input{type: "hidden",name: "id",value: "#{@netpacket[:id]}"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text starttime
+            %input{type: "datetime-local",id: "starttime", class: "form-control",name: "starttime",value: "#{@netpacket[:starttime]}"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text stoptime
+            %input{type: "datetime-local",id: "stoptime", class: "form-control",name: "stoptime",value: "#{@netpacket[:stoptime]}"}
+        
+        .input-group
+          .input-group-prepend
+            %span.input-group-text srcip
+            %input{type: "text",class: "form-control",name: "srcip",value: "#{@netpacket[:srcip]}"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text dstip
+            %input{type: "text",class: "form-control",name: "dstip",value: "#{@netpacket[:dstip]}"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text srcport
+            %input{type: "number",class: "form-control",name: "srcport",value: "#{@netpacket[:srcport]}"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text dstport
+            %input{type: "number",class: "form-control",name: "dstport",value: "#{@netpacket[:dstport]}"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text packets
+            %input{type: "number",class: "form-control",name: "packets",value: "#{@netpacket[:packets]}"}
+        
+        %p
+          %input{type: "submit",class: "btn btn-primary",value: "Save this infomation"}
+
+      %p
+        %a{href: "/packets" ,class: "btn btn-warning"} Back to Menu

@@ -14,7 +14,6 @@ get '/packets/new' do
 end
 
 post '/packets/create' do
-  @data = params[:starttime].to_s + params[:srcip].to_s + params[:packets].to_s
   netpacket = NetPackets.new
   netpacket.starttime = params[:starttime]
   netpacket.stoptime = params[:stoptime]
@@ -25,6 +24,34 @@ post '/packets/create' do
   netpacket.packets = params[:packets]
   netpacket.save
   redirect to("/packets")
+end
+
+get '/packets/edit' do
+  @netpacket = NetPackets.find(id: params[:id].to_i)
+  haml :packets_edit
+end
+
+post '/packets/update' do
+  netpacket = NetPackets.find(id: params[:id].to_i)
+  if netpacket != nil
+    netpacket[:starttime] = params[:starttime]
+    netpacket[:stoptime] = params[:stoptime]
+    netpacket[:srcip] = params[:srcip]
+    netpacket[:dstip] = params[:dstip]
+    netpacket[:srcport] = params[:srcport]
+    netpacket[:dstport] = params[:dstport]
+    netpacket[:packets] = params[:packets]
+    netpacket.save
+    redirect to("/packets")
+  else
+    @err = "this sequence is not exist,no id:#{params[:id]}"
+    haml :packets_errorr
+  end
+end
+
+get '/packets/delete' do
+  @data = params[:id]
+  haml :packets_debug
 end
 
 get '/debug' do

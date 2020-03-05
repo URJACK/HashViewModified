@@ -29,7 +29,7 @@
             %th srcport
             %th dstport
             %th packets
-            %th{colspan: "3"}
+            %th{colspan: "2"}
         - @netpackets.each do |packet|
           %tr
             %th #{packet.id}
@@ -40,5 +40,9 @@
             %th #{packet.srcport}
             %th #{packet.dstport}
             %th #{packet.packets}
+            %th
+              %a{href: "/packets/edit?id=#{packet.id}",class: "btn btn-warning"} Edit
+            %th
+              %a{href: "/packets/delete?id=#{packet.id}",class: "btn btn-danger"} Delete
 
       %a{href: "/packets/new",class: "btn btn-primary"} Add a new packet

@@ -46,6 +46,16 @@ let refreshViewByTheData = function(datas){
     }
   }
 }
+//"0913-03-02 13:00:00 -0752" to "0913-03-02T13:00:00"
+let formatDateTime_1 = function(data){
+  try {
+    arr = data.split(' ');
+    return arr[0] + 'T' + arr[1];
+  } catch (error) {
+    return data;
+  }
+}
+
 let getDataFromServer = function(){
   console.log("I'm going to get data from the server");
   // $.ajax({
