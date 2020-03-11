@@ -198,6 +198,9 @@ Sequel.migration do
       primary_key :id, type: :Bignum
       DateTime :starttime
       DateTime :stoptime
+      Integer :method
+      # status Ops include '0' means not worked, '1' means worked
+      Integer :status
       String :name
     end 
 

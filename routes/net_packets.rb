@@ -1,18 +1,39 @@
 PageSize = 5 
 get '/packets' do
-  page = params[:id]
+  opid = params[:opid]
+  # pageid is different from opid,its default value is 1,
+  page = params[:page]
   if page == nil
     page = 1
   end
   page = page.to_i
-  @netpackets = NetPackets.limit(PageSize).offset((page - 1) * PageSize)
-  @pageid = page
-  haml :packets_index
+  if opid == nil
+    @netpackets = NetPackets.limit(PageSize).offset((page - 1) * PageSize)
+    @pageid = page
+    @opid = opid
+    haml :packets_index
+  else
+    @operation = Operations.find(id: opid)
+    if @operation != nil
+      @netpackets = NetPackets.where(opid: opid).limit(PageSize).offset((page - 1) * PageSize)
+      @pageid = page
+      @opid = opid
+      haml :packets_index
+    else
+      # @err = "this operation is not exist"
+      # haml :packets_error
+      @netpackets = []
+      @pageid = page
+      @opid = opid
+      haml :packets_index
+    end
+  end
 end
 
 get '/packets/search' do
   @data = params[:data]
-  page = params[:id]
+  @opid = params[:opid]
+  page = params[:page]
   if page == nil
     page = 1
   end
@@ -71,6 +92,16 @@ get '/packets/delete' do
     @err = "this sequence can't be delete, id:#{params[:id]}"
     haml :packets_error
   end
+end
+
+post '/packets/gather' do
+  # methodindex will be send to the worker,means which method will be selected,but in the development environment,this param will be back to the frontend,
+  # the frontend will use this param to simulate the different process of receiving packets
+  methodindex = params[:methodindex]
+  @netpackets = []
+  @pageid = 1
+  @opid = 1
+  haml :packets_index
 end
 
 get '/debug' do

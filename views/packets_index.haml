@@ -4,19 +4,50 @@
     %script(src="/js/my.js")
     
     :javascript
+      //this value has the relationship with the html content,if you want to change the content in this array,you probably need to change the content located in this page's HTML
+      let methodStrings = ["Method_A","Method_B","Method_C"]
+      let oMethod,oSelect;
       //after each 10 seconds, this is page will try to get new data from the server
-      let GETDATASPAN = 10000;
-      let clock = setInterval(getDataFromServer, GETDATASPAN);
+      let gatherMethodChange = function(index){
+        oSelect.innerHTML = methodStrings[index];
+        oMethod.value = index;
+      }
+      window.onload = function(){
+        oSelect = document.getElementById('oSelect');
+        oMethod = document.getElementById('oMethod');
+        oMethod.value = 0;
+        console.log("selection index has been initialized as 'zero'")
+      }
   %body
     .container
-      %h1
-
+      - if @opid == nil
+        %h1 Here is the list of the packets
+      - else
+        %h1 Operation Id is : #{@opid}
+      - if @opid == nil
+        %form{'accept-charset' => "UTF-8",action: "/packets/gather",method: "post"}
+          %div.btn-group
+            %div{"class" => "btn-group", "role" => "group"}
+              %button{'class' => 'btn btn-defualt dropdown-toggle', 'type' => 'button','id' => 'oSelect', 'data-toggle' => 'dropdown', 'aria-haspopup' => 'true','aria-expanded' => 'true'} Method_A
+              %ul{"class" => "dropdown-menu", "aria-labelledby" => "oSelect"}
+                %li
+                  %a{'href' => '#',"onclick" => "gatherMethodChange(0)"} Method_A
+                %li
+                  %a{'href' => '#',"onclick" => "gatherMethodChange(1)"} Method_B
+                %li{'role' => 'separator', 'class' => 'divider'}
+                %li
+                  %a{'href' => '#',"onclick" => "gatherMethodChange(2)"} Method_C
+            %input{"type" => "hidden","name" => "methodindex","id" => "oMethod"}
+            %button{"class" => "btn btn-default"} Start New Gathering
+        %br
       %form{'accept-charset' => "UTF-8",action: "/packets/search",method: "get"}
         %div.input-group
           %span.input-group-addon Input ip or port
+          %input{name: "opid",type: "hidden",value: "#{@opid}"}
           %input{name: "data",type: "text",class: "form-control"}
           %span.input-group-btn
             %input{type: "submit",value: "Search",class:"btn btn-default"}
+      %br
       %table.table.table-bordered.table-hover
         %thead
           %tr
@@ -43,12 +74,16 @@
               %a{href: "/packets/edit?id=#{packet.id}",class: "btn btn-warning"} Edit
             %th
               %a{href: "/packets/delete?id=#{packet.id}",class: "btn btn-danger"} Delete
+      - if @opid == nil then basicChangeUrl = "/packets?page="
+      - else basicChangeUrl = "/packets?opid=#{@opid}&page="
       %p
         - if @pageid > 1
-          %a{href: "/packets?id=#{@pageid - 1}",class: "btn btn-warning"} Left
+          %a{href: "#{basicChangeUrl}#{@pageid - 1}",class: "btn btn-warning"} Left
         - else
-          %a{href: "/packets?id=#{@pageid}",class: "btn btn-default"} Left
+          %a{href: "#{basicChangeUrl}#{@pageid}",class: "btn btn-default"} Left
         %span.label.label-info #{@pageid}
-        %a{href: "/packets?id=#{@pageid + 1}",class: "btn btn-danger"} Right
+        %a{href: "#{basicChangeUrl}#{@pageid + 1}",class: "btn btn-danger"} Right
 
-      %a{href: "/packets/new",class: "btn btn-primary"} Add a new packet
+      - if @opid != nil
+        %a{href: "/packets/new",class: "btn btn-primary"} Add a new packet
+        %a{href: "/packets",class: "btn btn-warning"} Back
