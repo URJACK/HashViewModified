@@ -50,7 +50,7 @@ post '/login' do
       @curr_session = Sessions.create(username: usern, session_key: session[:session_id])
       @curr_session.save
 
-      redirect to('/home')
+      redirect to('/packets')
     end
     flash[:error] = 'Invalid credentials.'
     redirect to('/login')

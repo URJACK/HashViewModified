@@ -183,3 +183,7 @@ end
 class NetPackets < Sequel::Model(:netpackets)
   
 end
+
+class Operations < Sequel::Model(:operations)
+
+end

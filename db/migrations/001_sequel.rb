@@ -194,6 +194,13 @@ Sequel.migration do
       String :checksum, size: 64
     end
 
+    create_table(:operations) do
+      primary_key :id, type: :Bignum
+      DateTime :starttime
+      DateTime :stoptime
+      String :name
+    end 
+
     create_table(:netpackets) do
       primary_key :id, type: :Bignum
       DateTime :starttime
@@ -203,6 +210,13 @@ Sequel.migration do
       Integer :srcport
       Integer :dstport
       Integer :packets
+      String :protocols, size: 35
+      String :sessionid, size: 65
+      String :indexname, size: 50
+      String :info, size: 40
+      String :pcappath, size: 50
+      Integer :type
+      Integer :oid
     end
 
   end

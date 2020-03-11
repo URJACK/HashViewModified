@@ -7,7 +7,7 @@ get '/' do
   elsif !validSession?
     redirect to('/login')
   else
-    redirect to('/home')
+    redirect to('/packets')
   end
 end
 
