@@ -1,4 +1,6 @@
 PageSize = 5 
+MessageSurvivingTime = 8
+# draw the basic url's view
 get '/packets' do
   opid = params[:opid]
   # pageid is different from opid,its default value is 1,
@@ -30,6 +32,7 @@ get '/packets' do
   end
 end
 
+# draw the search result's view
 get '/packets/search' do
   @data = params[:data]
   @opid = params[:opid]
@@ -43,10 +46,12 @@ get '/packets/search' do
   haml :packets_search
 end
 
+# draw the view of creating new net-packet 
 get '/packets/new' do
   haml :packets_new
 end
 
+# the method of creating a new packet
 post '/packets/create' do
   netpacket = NetPackets.new
   netpacket.starttime = params[:starttime]
@@ -56,15 +61,31 @@ post '/packets/create' do
   netpacket.srcport = params[:srcport]
   netpacket.dstport = params[:dstport]
   netpacket.packets = params[:packets]
-  netpacket.save
-  redirect to("/packets")
+  netpacket.protocols = params[:protocols]
+  netpacket.sessionid = params[:sessionid]
+  netpacket.indexname = params[:indexname]
+  netpacket.info = params[:info]
+  netpacket.pcappath = params[:pcappath]
+  netpacket.type = params[:type]
+  netpacket.opid = 1
+  if netpacket.save
+    msg = Messages.new
+    msg.pid = netpacket.id;
+    msg.deadtime = Time.new + MessageSurvivingTime
+    msg.save
+    return netpacket.id.to_s
+  else
+    return false.to_s
+  end
 end
 
+# draw the view of editing a net-packet
 get '/packets/edit' do
   @netpacket = NetPackets.find(id: params[:id].to_i)
   haml :packets_edit
 end
 
+# the method of updating a new net-packet
 post '/packets/update' do
   netpacket = NetPackets.find(id: params[:id].to_i)
   if netpacket != nil
@@ -75,25 +96,41 @@ post '/packets/update' do
     netpacket[:srcport] = params[:srcport]
     netpacket[:dstport] = params[:dstport]
     netpacket[:packets] = params[:packets]
-    netpacket.save
-    redirect to("/packets")
+    netpacket[:protocols] = params[:protocols]
+    netpacket[:sessionid] = params[:sessionid]
+    netpacket[:indexname] = params[:indexname]
+    netpacket[:info] = params[:info]
+    netpacket[:pcappath] = params[:pcappath]
+    netpacket[:type] = params[:type]
+    if netpacket.save
+      msg = Messages.new
+      msg.pid = netpacket.id;
+      msg.deadtime = Time.new + MessageSurvivingTime
+      msg.save
+      redirect to("/packets")
+    else
+      @err = "this sequence can't be updated,id:#{params[:id]}"
+      haml :packets_error
+    end
   else
     @err = "this sequence is not exist,no id:#{params[:id]}"
     haml :packets_error
   end
 end
 
+# the method of destroy a net-packet
 get '/packets/delete' do
   netpacket = NetPackets.find(id: params[:id].to_i)
   if netpacket != nil
     netpacket.destroy
     redirect to("/packets")
   else
-    @err = "this sequence can't be delete, id:#{params[:id]}"
+    @err = "this record can't be delete,probably it had been removed just now, id:'#{params[:id]}'"
     haml :packets_error
   end
 end
 
+# the method of telling the server to start an operation(if this operation is not exist,a new operation will be created)
 post '/packets/gather' do
   # methodindex will be send to the worker,means which method will be selected,but in the development environment,this param will be back to the frontend,
   # the frontend will use this param to simulate the different process of receiving packets
@@ -102,6 +139,26 @@ post '/packets/gather' do
   @pageid = 1
   @opid = 1
   haml :packets_index
+end
+
+post '/packets/refresh' do
+  results = []
+  msg = Messages.first
+  if msg != nil
+    while(Time.new > msg.deadtime)
+      msg.destroy
+      msg = Messages.first
+      if(msg == nil)
+        break
+      end
+    end
+    msgs = Messages.all
+    msgs.each do |ele|
+      packet = NetPackets.find(id: ele[:pid])
+      results.push packet
+    end
+  end
+  return results.to_json
 end
 
 get '/debug' do

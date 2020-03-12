@@ -49,6 +49,36 @@
           .input-group-prepend
             %span.input-group-text packets
             %input{type: "number",class: "form-control",name: "packets",value: "#{@netpacket[:packets]}"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text protocols
+            %input{type: "text",class: "form-control",name: "protocols",value: "#{@netpacket[:protocols]}"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text sessionid
+            %input{type: "text",class: "form-control",name: "sessionid",value: "#{@netpacket[:sessionid]}"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text indexname
+            %input{type: "text",class: "form-control",name: "indexname",value: "#{@netpacket[:indexname]}"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text info
+            %input{type: "text",class: "form-control",name: "info",value: "#{@netpacket[:info]}"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text pcappath
+            %input{type: "text",class: "form-control",name: "pcappath",value: "#{@netpacket[:pcappath]}"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text type
+            %input{type: "number",class: "form-control",name: "type",value: "#{@netpacket[:type]}"}
         
         %p
           %input{type: "submit",class: "btn btn-primary",value: "Save this infomation"}

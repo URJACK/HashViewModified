@@ -219,7 +219,7 @@ Sequel.migration do
       String :info, size: 40
       String :pcappath, size: 50
       Integer :type
-      Integer :oid
+      Integer :opid
     end
 
     create_table(:messages) do

@@ -1,1 +1,59 @@
+%script(src="/js/my.js")
+:javascript
+  let oTime;
+  window.onload = function(){
+    oTime = document.getElementById("time");
+  }
+  let createFakeData = function(){
+    let ipAddress = "192.168.0."
+    let srcip = ipAddress + (Math.floor(Math.random() * 254) + 1)
+    let dstip = ipAddress + (Math.floor(Math.random() * 254) + 1)
+    let srcport = Math.floor(Math.random() * 30000) + 100
+    let dstport = Math.floor(Math.random() * 30000) + 100
+    let starttime = oTime.value
+    let stoptime = oTime.value
+    let packets = Math.floor(Math.random() * 20) + 5
+    let protocols = "http-tcp"
+    let sessionid = "200305-T0I2L-"
+    for(let i = 0 ; i < 18 ; ++i){
+      sessionid += String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    }
+    let indexname = "sessions2-200305"
+    let info = "nothing"
+    let pcappath = "/home/test.Pcap"
+    let type = MITM_TYPE;
+    return {
+      starttime : starttime,
+      stoptime : stoptime,
+      srcip : srcip,
+      dstip : dstip,
+      srcport : srcport,
+      dstport : dstport,
+      packets : packets,
+      protocols : protocols,
+      sessionid : sessionid,
+      indexname : indexname,
+      info : info,
+      pcappath : pcappath,
+      type : type
+    }
+  }
+  let debugSend = function(){
+    console.log("Send")
+    $.ajax({
+      url:"/packets/create",
+      data:createFakeData(),
+      method:"POST",
+      success:function(data){
+        console.log("success!!")
+        console.log(data)
+      },
+      error:function(){
+        console.log("failed!!")
+      }
+    })
+  }
+
 %div= @data
+%input{type:"datetime-local",id:"time"}
+%input{type:"button",onclick:"debugSend()",value:"debugSend"}

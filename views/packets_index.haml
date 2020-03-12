@@ -4,20 +4,136 @@
     %script(src="/js/my.js")
     
     :javascript
-      //this value has the relationship with the html content,if you want to change the content in this array,you probably need to change the content located in this page's HTML
-      let methodStrings = ["Method_A","Method_B","Method_C"]
-      let oMethod,oSelect;
-      //after each 10 seconds, this is page will try to get new data from the server
-      let gatherMethodChange = function(index){
-        oSelect.innerHTML = methodStrings[index];
-        oMethod.value = index;
-      }
-      window.onload = function(){
-        oSelect = document.getElementById('oSelect');
-        oMethod = document.getElementById('oMethod');
-        oMethod.value = 0;
-        console.log("selection index has been initialized as 'zero'")
-      }
+        //"time-span", which means how much time-span you have to request data per time
+        let timeSpan = 5000;
+        let PageSize = 5;
+        let clock,tbody;
+        //these indexs means the right locations of datas in the web view(packets_index.haml); 
+        let ID_INDEX = 0;
+        let STARTTIME_INDEX = 1;
+        let STOPTIME_INDEX = 2;
+        let SRCIP_INDEX = 3;
+        let DSTIP_INDEX = 4;
+        let SRCPORT_INDEX = 5;
+        let DSTPORT_INDEX = 6;
+        let PACKETS_INDEX = 7;
+        let PROTOCOLS_INDEX = 8;
+        //let SESSIONID_INDEX = 9;
+        //let INDEXNAME_INDEX = 10;
+        //let INFO_INDEX = 11;
+        //let PCAPPATH_INDEX = 12;
+        //let TYPE_INDEX = 13;
+        //let PCAPPATH_INDEX = 9;
+        let TYPE_INDEX = 9;
+        let fakeData = [{"id":1,"starttime":"2020-02-01 01:00:00 -0800","stoptime":"2020-02-01 01:00:00 -0800","srcip":"192.168.0.155","dstip":"192.168.0.125","srcport":16152,"dstport":19000,"packets":6,"protocols":"http-tcp","sessionid":"200305-T0I2L-QXGHGMGLVGMRBWIKCX","indexname":"sessions2-200213","info":"nothing","pcappath":"asdfadf","type":1,"opid":1}];
+        //element 'tr' will add data as its children
+        let trAppendTh = function(tr,data){
+          let th = document.createElement('th');
+          th.innerHTML = data;
+          tr.appendChild(th)
+        }
+        let thAppendA = function(th,className,url,data){
+          let a = document.createElement('a');
+          a.className = className;
+          a.href = url
+          a.innerHTML = data
+          th.appendChild(a)
+        }
+        let refreshViewByTheData = function(datas){
+          for(let i = 0 ; i < datas.length ; ++i){
+            element = document.getElementById(datas[i].id)
+            console.log(element)
+            //to find the data which is needed to be changed
+            if(element != null){
+              element.children[ID_INDEX].innerText = datas[i].id;
+              //element.children[STARTTIME_INDEX].innerText = formZtoUTC(datas[i].starttime)
+              //element.children[STOPTIME_INDEX].innerText = formZtoUTC(datas[i].stoptime)
+              element.children[STARTTIME_INDEX].innerText = datas[i].starttime
+              element.children[STOPTIME_INDEX].innerText = datas[i].stoptime
+              element.children[SRCIP_INDEX].innerText = datas[i].srcip;
+              element.children[SRCPORT_INDEX].innerText = datas[i].srcport;
+              element.children[DSTIP_INDEX].innerText = datas[i].dstip;
+              element.children[DSTPORT_INDEX].innerText = datas[i].dstport;
+              element.children[PACKETS_INDEX].innerText = datas[i].packets;
+              element.children[PROTOCOLS_INDEX].innerText = datas[i].protocols;
+              //element.children[SESSIONID_INDEX].innerText = datas[i].sessionid;
+              //element.children[INDEXNAME_INDEX].innerText = datas[i].indexname;
+              //element.children[INFO_INDEX].innerText = datas[i].info;
+              //element.children[PCAPPATH_INDEX].innerText = datas[i].pcappath;
+              element.children[TYPE_INDEX].innerText = datas[i].type;
+            }else{
+              //it means that the datas didn't fill the view up.In other words,it can be filled with other datas
+              if(tbody.childElementCount < PageSize){
+                let tr = document.createElement('tr');
+                tr.id = datas[i].id
+                trAppendTh(tr,datas[i].id);
+                trAppendTh(tr,datas[i].starttime);
+                trAppendTh(tr,datas[i].stoptime);
+                trAppendTh(tr,datas[i].srcip);
+                trAppendTh(tr,datas[i].dstip);
+                trAppendTh(tr,datas[i].srcport);
+                trAppendTh(tr,datas[i].dstport);
+                trAppendTh(tr,datas[i].packets);
+                trAppendTh(tr,datas[i].protocols);
+                //trAppendTh(tr,datas[i].pcappath);
+                trAppendTh(tr,datas[i].type);
+
+                let th = document.createElement('th')
+                thAppendA(th,"btn btn-warning","/packets/edit?id=" + datas[i].id,"Edit")
+                tr.appendChild(th);
+
+                th = document.createElement('th')
+                thAppendA(th,"btn btn-danger","/packets/delete?id=" + datas[i].id,"Delete")
+                tr.appendChild(th);
+                tbody.appendChild(tr);
+              }
+            }
+          }
+        }
+        let getDataFromServer = function(){
+          console.log("I'm going to get data from the server");
+          $.ajax({
+            url:"/packets/refresh",
+            data:null,
+            method:"POST",
+            success:function(data){
+              if(typeof data != "object"){
+                data = JSON.parse(data);
+              }
+              refreshViewByTheData(data)
+            },
+            error:function(){
+              clearInterval(clock)
+            }
+          })
+        }
+        clock = setInterval(getDataFromServer,timeSpan)
+        
+    - if @opid == nil
+      :javascript
+        //this value has the relationship with the html content,if you want to change the content in this array,you probably need to change the content located in this page's HTML
+        let methodStrings = ["Method_A","Method_B","Method_C"]
+        let oMethod,oSelect;
+        //after each 10 seconds, this is page will try to get new data from the server
+        let gatherMethodChange = function(index){
+          oSelect.innerHTML = methodStrings[index];
+          oMethod.value = index;
+        }
+        window.onload = function(){
+          oSelect = document.getElementById('oSelect');
+          oMethod = document.getElementById('oMethod');
+          oMethod.value = 0;
+          console.log("selection index has been initialized as 'zero'")
+
+          tbody = document.getElementById("table").children[1]
+          if(tbody == null){
+            tbody = document.createElement('tbody');
+            document.getElementById("table").appendChild(tbody)
+          }
+          //console.log(tbody.children)
+          //console.log("debug","fakeData")
+          //refreshViewByTheData(fakeData)
+        }
   %body
     .container
       - if @opid == nil
@@ -48,7 +164,7 @@
           %span.input-group-btn
             %input{type: "submit",value: "Search",class:"btn btn-default"}
       %br
-      %table.table.table-bordered.table-hover
+      %table.table.table-bordered.table-hover{"id" => "table"}
         %thead
           %tr
             %th id
@@ -59,9 +175,15 @@
             %th srcport
             %th dstport
             %th packets
+            %th protocols
+            -# %th sessionid
+            -# %th indexname
+            -# %th info
+            -# %th pcappath
+            %th type
             %th{colspan: "2"}
         - @netpackets.each do |packet|
-          %tr
+          %tr{"id" => "#{packet.id}"}
             %th #{packet.id}
             %th #{packet.starttime}
             %th #{packet.stoptime}
@@ -70,6 +192,12 @@
             %th #{packet.srcport}
             %th #{packet.dstport}
             %th #{packet.packets}
+            %th #{packet.protocols}
+            -# %th #{packet.sessionid}
+            -# %th #{packet.indexname}
+            -# %th #{packet.info}
+            -# %th #{packet.pcappath}
+            %th #{packet.type}
             %th
               %a{href: "/packets/edit?id=#{packet.id}",class: "btn btn-warning"} Edit
             %th
