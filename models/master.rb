@@ -187,3 +187,7 @@ end
 class Operations < Sequel::Model(:operations)
 
 end
+
+class Messages < Sequel::Model(:messages)
+
+end

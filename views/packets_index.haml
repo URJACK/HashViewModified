@@ -21,9 +21,9 @@
   %body
     .container
       - if @opid == nil
-        %h1 Here is the list of the packets
+        %h1 Homepage
       - else
-        %h1 Operation Id is : #{@opid}
+        %h1 Homepage > Operation: #{@opid}
       - if @opid == nil
         %form{'accept-charset' => "UTF-8",action: "/packets/gather",method: "post"}
           %div.btn-group

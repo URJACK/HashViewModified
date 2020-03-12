@@ -10,9 +10,9 @@
   %body
     .container
       - if @opid != nil && @opid != ""
-        %h1 here is the search #{@data} results.  opid is '#{@opid}' 
+        %h1 Homepage > Operation: #{@opid} > Search: #{@data}. 
       - else
-        %h1 here is the search #{@data} results.
+        %h1 Homepage > Search: #{@data}.
       %table.table.table-bordered.table-hover
         %thead
           %tr

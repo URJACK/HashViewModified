@@ -222,5 +222,13 @@ Sequel.migration do
       Integer :oid
     end
 
+    create_table(:messages) do
+      primary_key :id, type: :Bignum
+      # If the message is terminated beyond the current time, the message will be removed.
+      DateTime :deadtime
+      # reference about the Operations
+      Integer :pid
+    end
+
   end
 end
