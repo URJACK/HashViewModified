@@ -9,6 +9,7 @@
         let timeSpan = 5000;
         let PageSize = 5;
         let clock,tbody;
+        let opid = #{@opid}
         //these indexs means the right locations of datas in the web view(packets_index.haml); 
         let ID_INDEX = 0;
         let STARTTIME_INDEX = 1;
@@ -63,7 +64,7 @@
               element.children[TYPE_INDEX].innerText = datas[i].type;
             }else{
               //it means that the datas didn't fill the view up.In other words,it can be filled with other datas
-              if(tbody.childElementCount < PageSize){
+              if(tbody.childElementCount < PageSize && datas[i].opid == opid){
                 let tr = document.createElement('tr');
                 tr.id = datas[i].id
                 trAppendTh(tr,datas[i].id);

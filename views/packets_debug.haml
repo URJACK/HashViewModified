@@ -60,6 +60,7 @@
     let span = document.getElementById("sendspan").value
     document.getElementById("status").innerHTML = "open"
     if(span > 1000){
+      clearInterval(timer)
       timer = setInterval(sendFakeData,span); 
     }else{
       alert("Your span setting is not available")
