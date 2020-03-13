@@ -8,6 +8,7 @@
 
       %form{'accept-charset' => "UTF-8",action: "/packets/create",method: "post"}
         %input{type:"hidden",name: "opid",value: "#{@opid}"}
+        %input{type:"hidden",name: "ajax",value: "0"}
       
         .input-group
           .input-group-prepend

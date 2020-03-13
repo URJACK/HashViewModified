@@ -35,10 +35,12 @@
       indexname : indexname,
       info : info,
       pcappath : pcappath,
-      type : type
+      type : type,
+      opid : document.getElementById("opid").value,
+      ajax : 1
     }
   }
-  let debugSend = function(){
+  let sendFakeData = function(){
     console.log("Send")
     $.ajax({
       url:"/packets/create",
@@ -53,7 +55,36 @@
       }
     })
   }
+  let timer;
+  let debugSend = function(){
+    let span = document.getElementById("sendspan").value
+    document.getElementById("status").innerHTML = "open"
+    if(span > 1000){
+      timer = setInterval(sendFakeData,span); 
+    }else{
+      alert("Your span setting is not available")
+    }
+  }
+  let stopDebugSend = function(){
+    document.getElementById("status").innerHTML = "close"
+    clearInterval(timer)
+  }
 
 %div= @data
-%input{type:"datetime-local",id:"time"}
-%input{type:"button",onclick:"debugSend()",value:"debugSend"}
+Here we're going to create Fake Data
+%p
+  input Time
+  %input{type:"datetime-local",id:"time"}
+%p
+  input opId
+  %input{type:"number",id:"opid",value:"1"}
+%p
+  input createSpan(min : 1000)
+  %input{type:"number",id:"sendspan",value:"5000"}
+%p
+  %input{type:"button",class:"btn btn-warning",onclick:"debugSend()",value:"start creating"}
+%p
+  %input{type:"button",class:"btn btn-danger",onclick:"stopDebugSend()",value:"stop Creating"}
+%p
+  creating Status :
+  %span.label.label-default{id:"status"} close

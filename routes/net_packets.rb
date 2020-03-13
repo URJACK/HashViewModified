@@ -45,7 +45,11 @@ get '/packets/search' do
     page = 1
   end
   page = page.to_i
-  @netpackets = NetPackets.fetch("SELECT * FROM netpackets WHERE srcip = ? OR srcport = ? OR dstip = ? OR dstport = ? limit ? offset ?;", @data,@data,@data,@data,PageSize,(page - 1) * PageSize)
+  if @opid != nil && @opid != ""
+    @netpackets = NetPackets.fetch("SELECT * FROM netpackets WHERE (srcip = ? OR srcport = ? OR dstip = ? OR dstport = ?) AND opid = ? limit ? offset ?;", @data,@data,@data,@data,@opid,PageSize,(page - 1) * PageSize)
+  else
+    @netpackets = NetPackets.fetch("SELECT * FROM netpackets WHERE srcip = ? OR srcport = ? OR dstip = ? OR dstport = ? limit ? offset ?;", @data,@data,@data,@data,PageSize,(page - 1) * PageSize)
+  end  
   @pageid = page
   haml :packets_search
 end
@@ -78,12 +82,18 @@ post '/packets/create' do
     msg.pid = netpacket.id;
     msg.deadtime = Time.new + MessageSurvivingTime
     msg.save
-    redirect "/packets?opid=#{params[:opid]}"
-    # return netpacket.id.to_s
+    if params[:ajax].to_i == 0
+      redirect "/packets?opid=#{params[:opid]}"
+    else
+      return netpacket.id.to_s
+    end
   else
-    @err = "saving data is not successful"
-    haml :packets_error
-    # return false.to_s
+    if params[:ajax].to_i == 0
+      @err = "saving data is not successful"
+      haml :packets_error
+    else
+      return false.to_s
+    end
   end
 end
 
@@ -130,9 +140,14 @@ end
 # the method of destroy a net-packet
 get '/packets/delete' do
   netpacket = NetPackets.find(id: params[:id].to_i)
+  # opid will probably be nil or ""
+  opid = params[:opid]
+  if opid == nil
+    opid = ""
+  end
   if netpacket != nil
     netpacket.destroy
-    redirect to("/packets")
+    redirect to("/packets?opid=#{opid}")
   else
     @err = "this record can't be delete,probably it had been removed just now, id:'#{params[:id]}'"
     haml :packets_error

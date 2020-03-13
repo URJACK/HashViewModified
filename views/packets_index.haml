@@ -83,7 +83,7 @@
                 tr.appendChild(th);
 
                 th = document.createElement('th')
-                thAppendA(th,"btn btn-danger","/packets/delete?id=" + datas[i].id,"Delete")
+                thAppendA(th,"btn btn-danger","/packets/delete?opid=#{@opid}&id=" + datas[i].id,"Delete")
                 tr.appendChild(th);
                 tbody.appendChild(tr);
               }
@@ -208,7 +208,7 @@
             %th
               %a{href: "/packets/edit?opid=#{@opid}&id=#{packet.id}",class: "btn btn-warning"} Edit
             %th
-              %a{href: "/packets/delete?id=#{packet.id}",class: "btn btn-danger"} Delete
+              %a{href: "/packets/delete?opid=#{@opid}&id=#{packet.id}",class: "btn btn-danger"} Delete
       - if @opid == nil then basicChangeUrl = "/packets?page="
       - else basicChangeUrl = "/packets?opid=#{@opid}&page="
       %p
@@ -220,5 +220,5 @@
         %a{href: "#{basicChangeUrl}#{@pageid + 1}",class: "btn btn-danger"} Right
 
       - if @opid != nil
-        %a{href: "/packets/new?opid=#{@opid}",class: "btn btn-primary"} Add a new packet
-        %a{href: "/packets",class: "btn btn-warning"} Back
+        %a{href: "/packets/new?opid=#{@opid}",class: "btn btn-warning"} Add a new packet
+        %a{href: "/packets",class: "btn btn-primary"} Back
