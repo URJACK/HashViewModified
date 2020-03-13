@@ -7,6 +7,8 @@
       %h1 You can add a new packet here
 
       %form{'accept-charset' => "UTF-8",action: "/packets/create",method: "post"}
+        %input{type:"hidden",name: "opid",value: "#{@opid}"}
+      
         .input-group
           .input-group-prepend
             %span.input-group-text starttime
@@ -41,7 +43,39 @@
           .input-group-prepend
             %span.input-group-text packets
             %input{type: "number",class: "form-control",name: "packets"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text protocols
+            %input{type: "text",class: "form-control",name: "protocols"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text sessionid
+            %input{type: "text",class: "form-control",name: "sessionid"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text indexname
+            %input{type: "text",class: "form-control",name: "indexname"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text info
+            %input{type: "text",class: "form-control",name: "info"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text pcappath
+            %input{type: "text",class: "form-control",name: "pcappath"}
+
+        .input-group
+          .input-group-prepend
+            %span.input-group-text type
+            %input{type: "number",class: "form-control",name: "type"}
         
         %p
           %input{type: "submit",class: "btn btn-primary"} Add this into storage
             
+      %p
+        %a{href: "/packets?opid=#{@opid}" ,class: "btn btn-warning"} Back

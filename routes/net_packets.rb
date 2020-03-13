@@ -1,5 +1,9 @@
 PageSize = 5 
 MessageSurvivingTime = 8
+# "Status" means that the instance object of the "Operation" class is in the "Off" or "Open" state"
+StatusOpen = 1
+StatusClose = 0
+CodeError = 233
 # draw the basic url's view
 get '/packets' do
   opid = params[:opid]
@@ -9,6 +13,10 @@ get '/packets' do
     page = 1
   end
   page = page.to_i
+  # process this specific situation
+  if opid == ""
+    opid = nil
+  end
   if opid == nil
     @netpackets = NetPackets.limit(PageSize).offset((page - 1) * PageSize)
     @pageid = page
@@ -22,12 +30,8 @@ get '/packets' do
       @opid = opid
       haml :packets_index
     else
-      # @err = "this operation is not exist"
-      # haml :packets_error
-      @netpackets = []
-      @pageid = page
-      @opid = opid
-      haml :packets_index
+      @err = "this operation(opid:#{opid}) is not exist"
+      haml :packets_error
     end
   end
 end
@@ -48,6 +52,7 @@ end
 
 # draw the view of creating new net-packet 
 get '/packets/new' do
+  @opid = params[:opid]
   haml :packets_new
 end
 
@@ -67,21 +72,25 @@ post '/packets/create' do
   netpacket.info = params[:info]
   netpacket.pcappath = params[:pcappath]
   netpacket.type = params[:type]
-  netpacket.opid = 1
+  netpacket.opid = params[:opid]
   if netpacket.save
     msg = Messages.new
     msg.pid = netpacket.id;
     msg.deadtime = Time.new + MessageSurvivingTime
     msg.save
-    return netpacket.id.to_s
+    redirect "/packets?opid=#{params[:opid]}"
+    # return netpacket.id.to_s
   else
-    return false.to_s
+    @err = "saving data is not successful"
+    haml :packets_error
+    # return false.to_s
   end
 end
 
 # draw the view of editing a net-packet
 get '/packets/edit' do
   @netpacket = NetPackets.find(id: params[:id].to_i)
+  @opid = params[:opid]
   haml :packets_edit
 end
 
@@ -107,7 +116,7 @@ post '/packets/update' do
       msg.pid = netpacket.id;
       msg.deadtime = Time.new + MessageSurvivingTime
       msg.save
-      redirect to("/packets")
+      redirect to("/packets?opid=#{params[:opid]}")
     else
       @err = "this sequence can't be updated,id:#{params[:id]}"
       haml :packets_error
@@ -135,10 +144,39 @@ post '/packets/gather' do
   # methodindex will be send to the worker,means which method will be selected,but in the development environment,this param will be back to the frontend,
   # the frontend will use this param to simulate the different process of receiving packets
   methodindex = params[:methodindex]
+  operation = Operations.new
+  operation[:starttime] = Time.new
+  operation[:status] = StatusOpen
+  operation.save
   @netpackets = []
   @pageid = 1
-  @opid = 1
+  @opid = operation.id
   haml :packets_index
+end
+
+# this method will stop the specified "Operation" object
+post '/packets/stopgather' do
+  operation = Operations.find(id: params[:opid])
+  if operation != nil
+    operation[:stoptime] = Time.new
+    operation[:status] = false
+    operation.save
+    # to set the status as "close" is successful
+    return true
+  else
+    # can't find the right "Operation" instance object
+    return false
+  end
+end
+
+# this method will return the status of the specified "Operation" object
+post '/packets/operationstatus' do
+  operation = Operation.find(id: params[:opid])
+  if operation != nil
+    return operation[:status]
+  else
+    return CodeError
+  end
 end
 
 post '/packets/refresh' do
