@@ -122,23 +122,43 @@
       :javascript
         //this value has the relationship with the html content,if you want to change the content in this array,you probably need to change the content located in this page's HTML
         let methodStrings = ["Method_A","Method_B","Method_C"]
-        let oMethod,oSelect;
         //after each 10 seconds, this is page will try to get new data from the server
         let gatherMethodChange = function(index){
-          oSelect.innerHTML = methodStrings[index];
-          oMethod.value = index;
+          console.log(index)
         }
         window.onload = function(){
-          oSelect = document.getElementById('oSelect');
-          oMethod = document.getElementById('oMethod');
-          oMethod.value = 0;
+          var oGather = new Vue({
+              el : '#oGather',
+              data : {
+                  index : 0,
+                  dstip : "",
+                  gateway : "",
+                  message : "MethodA"
+              },
+              methods: {
+                changeIndex : function (nindex) {
+                  oindex = this.index;
+                  if(oindex != nindex){
+                    //index has changed
+                    if(nindex == 0){
+                      this.message = "MethodA"
+                    }else if(nindex == 1){
+                      this.message = "MethodB"
+                    }else{
+                      this.message = "MethodC"
+                    }
+                  }
+                  this.index = nindex;
+                }
+              }
+          });
           console.log("selection index has been initialized as 'zero'")
 
-          tbody = document.getElementById("table").children[1]
-          if(tbody == null){
-            tbody = document.createElement('tbody');
-            document.getElementById("table").appendChild(tbody)
-          }
+          //tbody = document.getElementById("table").children[1]
+          //if(tbody == null){
+          //  tbody = document.createElement('tbody');
+          //  document.getElementById("table").appendChild(tbody)
+          //}
           //console.log(tbody.children)
           //console.log("debug","fakeData")
           //refreshViewByTheData(fakeData)
@@ -146,33 +166,49 @@
   %body
     .container
       - if @opid == nil
-        %h1 Homepage
+        %span.label.label-default Homepage
       - else
-        %h1 Homepage > Operation: #{@opid}
+        %span.label.label-default Homepage 
+        %span.label.label-success >
+        %span.label.label-default Operation: #{@opid}
+      %br
+      %br
       - if @opid == nil
         %form{'accept-charset' => "UTF-8",action: "/packets/gather",method: "post"}
-          %div.btn-group
-            %div{"class" => "btn-group", "role" => "group"}
-              %button{'class' => 'btn btn-defualt dropdown-toggle', 'type' => 'button','id' => 'oSelect', 'data-toggle' => 'dropdown', 'aria-haspopup' => 'true','aria-expanded' => 'true'} Method_A
+          %div.container#oGather
+            %input{"type" => "hidden","name" => "methodindex","v-model" => "index"}
+            %div{"class" => "btn-group col-md-1", "role" => "group"}
+              %button{'class' => 'btn btn-defualt dropdown-toggle', 'type' => 'button','id' => 'oSelect', 'data-toggle' => 'dropdown', 'aria-haspopup' => 'true','aria-expanded' => 'true'} {{message}}
               %ul{"class" => "dropdown-menu", "aria-labelledby" => "oSelect"}
                 %li
-                  %a{'href' => '#',"onclick" => "gatherMethodChange(0)"} Method_A
+                  %a{'href' => '#',"v-on:click" => "changeIndex(0)"} Method_A
                 %li
-                  %a{'href' => '#',"onclick" => "gatherMethodChange(1)"} Method_B
+                  %a{'href' => '#',"v-on:click" => "changeIndex(1)"} Method_B
                 %li{'role' => 'separator', 'class' => 'divider'}
                 %li
-                  %a{'href' => '#',"onclick" => "gatherMethodChange(2)"} Method_C
-            %input{"type" => "hidden","name" => "methodindex","id" => "oMethod"}
-            %button{"class" => "btn btn-default"} Start New Gathering
+                  %a{'href' => '#',"v-on:click" => "changeIndex(2)"} Method_C
+            %div{"v-if" => "index==2","class" => "col-md-8"}
+              %div{"class" => "col-md-6"}
+                %div{"class" => "input-group"}
+                  %span{"class" => "input-group-addon"} dstip
+                  %input{"type" => "text","class" => "form-control","v-model" => "dstip","name" => "dstip"}
+              %div{"class" => "col-md-6"}
+                %div{"class" => "input-group"}
+                  %span{"class" => "input-group-addon"} gateway
+                  %input{"type" => "text","class" => "form-control","v-model" => "gateway","name" => "gateway"}
+            %div{"class" => "col-md-2"}
+              %button{"class" => "btn btn-default"} Start New Gathering
         %br
-      %form{'accept-charset' => "UTF-8",action: "/packets/search",method: "get"}
-        %div.input-group
-          %span.input-group-addon Input ip or port
-          %input{name: "opid",type: "hidden",value: "#{@opid}"}
-          %input{name: "data",type: "text",class: "form-control"}
-          %span.input-group-btn
-            %input{type: "submit",value: "Search",class:"btn btn-default"}
-      %br
+      %div.container
+        %form{'accept-charset' => "UTF-8",action: "/packets/search",method: "get"}
+          %div.container
+            %div.input-group.col-md-4
+              %span.input-group-addon Input ip or port
+              %input{name: "opid",type: "hidden",value: "#{@opid}"}
+              %input{name: "data",type: "text",class: "form-control"}
+              %span.input-group-btn
+                %input{type: "submit",value: "Search",class:"btn btn-default"}
+        %br
       %table.table.table-bordered.table-hover{"id" => "table"}
         %thead
           %tr

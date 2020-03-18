@@ -159,6 +159,8 @@ post '/packets/gather' do
   # methodindex will be send to the worker,means which method will be selected,but in the development environment,this param will be back to the frontend,
   # the frontend will use this param to simulate the different process of receiving packets
   methodindex = params[:methodindex]
+  dstip = params[:dstip]
+  gateway = params[:gateway]
   operation = Operations.new
   operation[:starttime] = Time.new
   operation[:status] = StatusOpen
