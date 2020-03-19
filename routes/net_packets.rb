@@ -154,6 +154,21 @@ get '/packets/delete' do
   end
 end
 
+# the method
+post '/packets/export' do
+  methodindex = params[:methodindex]
+  opid = params[:opid]
+  fromid = params[:fromid]
+  toid = params[:toid]
+  srcip = params[:srcip]
+  dstip = params[:dstip]
+  fromtime = params[:fromtime]
+  totime = params[:totime]
+  protocol = params[:protocol]
+  @err = "debug info : methodindex:#{methodindex},opid:#{opid},fromid:#{fromid},toid:#{toid},srcip:#{srcip},dstip:#{dstip},fromtime:#{fromtime},totime:#{totime},protocol:#{protocol}"
+  return @err
+end
+
 # the method of telling the server to start an operation(if this operation is not exist,a new operation will be created)
 post '/packets/gather' do
   # methodindex will be send to the worker,means which method will be selected,but in the development environment,this param will be back to the frontend,

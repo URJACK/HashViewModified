@@ -3,7 +3,90 @@
   %header
     %script(src="/js/my.js")
     %script(src="/js/vue.js")
-    
+    :javascript
+
+      let CommonWindowOnLoad = function(){
+        //0:id 1:srcip 2:dstip 3:time 4:protocol
+        var oExport = new Vue({
+          el : '#oExport',
+          data : {
+              index : 0,
+              fromid : 0,
+              toid : 0,
+              srcip : "0.0.0.0",
+              dstip : "0.0.0.0",
+              fromtime : "",
+              totime : "",
+              protocol : "",
+              message : "Export By Id",
+              message_ender : "Do it"
+          },
+          methods: {
+            changeIndex : function (nindex) {
+              oindex = this.index;
+              if(oindex != nindex){
+                //index has changed
+                if(nindex == 0){
+                  this.message = "Export By Id"
+                }else if(nindex == 1){
+                  this.message = "Export By SrcIp"
+                }else if(nindex == 2){
+                  this.message = "Export By DstIp"
+                }else if(nindex == 3){
+                  this.message = "Export By Time"
+                }else{
+                  this.message = "Export By Protocol"
+                }
+              }
+              this.index = nindex;
+            },
+            startExport : function(){
+              this.resetOtherValue();
+              $.ajax({
+                url:"/packets/export",
+                data:{
+                  methodindex : this.index,
+                  opid : "#{@opid}",
+                  fromid : this.fromid,
+                  toid : this.toid,
+                  srcip : this.srcip,
+                  dstip : this.dstip,
+                  fromtime : this.fromtime,
+                  totime : this.totime,
+                  protocol : this.protocol
+                },
+                method:"POST",
+                success:function(data){
+                  console.log(data)
+                },
+                error:function(){
+                  console.log("failed!!")
+                }
+              })
+            },
+            resetOtherValue : function(){
+              let oindex = this.index;
+              if(oindex != 0){
+                this.fromid = 0;
+                this.toid = 0;
+              }
+              if(oindex != 1){
+                this.srcip = "0.0.0.0";
+              }
+              if(oindex != 2){
+                this.dstip = "0.0.0.0";
+              }
+              if(oindex != 3){
+                this.fromtime = "";
+                this.totime = "";
+              }
+              if(oindex != 4){
+                this.protocol = "";
+              }
+            }
+          }
+        });
+      }
     - if @opid != nil
       :javascript
         //"time-span", which means how much time-span you have to request data per time
@@ -116,6 +199,7 @@
             tbody = document.createElement('tbody');
             document.getElementById("table").appendChild(tbody)
           }
+          CommonWindowOnLoad();
         }
 
     - if @opid == nil
@@ -152,6 +236,7 @@
                 }
               }
           });
+          CommonWindowOnLoad();
           console.log("selection index has been initialized as 'zero'")
 
           //tbody = document.getElementById("table").children[1]
@@ -166,12 +251,13 @@
   %body
     .container
       - if @opid == nil
-        %span.label.label-default Homepage
+        %h3
+          %span.label.label-default Homepage
       - else
-        %span.label.label-default Homepage 
-        %span.label.label-success >
-        %span.label.label-default Operation: #{@opid}
-      %br
+        %h3
+          %span.label.label-default Homepage 
+          %span.label.label-success >
+          %span.label.label-default Operation: #{@opid}
       %br
       - if @opid == nil
         %form{'accept-charset' => "UTF-8",action: "/packets/gather",method: "post"}
@@ -200,14 +286,85 @@
               %button{"class" => "btn btn-default"} Start New Gathering
         %br
       %div.container
-        %form{'accept-charset' => "UTF-8",action: "/packets/search",method: "get"}
-          %div.container
-            %div.input-group.col-md-4
+        %div.col-md-4
+          %form{'accept-charset' => "UTF-8",action: "/packets/search",method: "get"}
+            %div.input-group
               %span.input-group-addon Input ip or port
               %input{name: "opid",type: "hidden",value: "#{@opid}"}
               %input{name: "data",type: "text",class: "form-control"}
               %span.input-group-btn
                 %input{type: "submit",value: "Search",class:"btn btn-default"}
+          
+        %div.col-md-2
+          %button{"class" => "btn btn-warning","data-toggle" => "modal", "data-target" => "#myModal"} export packets
+        %div{"class" => "modal fade", "id" => "myModal","tabindex" => "-1","role" => "dialog","aria-labelledby" => "myModalLabel"}
+          %div{"class" => "modal-dialog", "role"=>"document"}
+            %div.modal-content#oExport
+              %div.modal-header
+                %h4{"class"=>"modal-title", "id"=>"myModalLabel"}Export Netpackets
+              %div.modal-body
+                %div.container
+                  %input{"type" => "hidden","name" => "methodindex","v-model" => "index"}
+                  %input{"type" => "hidden","name" => "opid","value" => "#{@opid}"}
+                  %div{"class" => "btn-group ", "role" => "group"}
+                    %button{'class' => 'btn btn-defualt dropdown-toggle', 'type' => 'button','id' => 'oSelect', 'data-toggle' => 'dropdown', 'aria-haspopup' => 'true','aria-expanded' => 'true'} {{message}}
+                    %ul{"class" => "dropdown-menu", "aria-labelledby" => "oSelect"}
+                      %li
+                        %a{'href' => '#',"v-on:click" => "changeIndex(0)"} ExportBy_Id
+                      %li{'role' => 'separator', 'class' => 'divider'}
+                      %li
+                        %a{'href' => '#',"v-on:click" => "changeIndex(1)"} ExportBy_SrcIp
+                      %li
+                        %a{'href' => '#',"v-on:click" => "changeIndex(2)"} ExportBy_DstIp
+                      %li{'role' => 'separator', 'class' => 'divider'}
+                      %li
+                        %a{'href' => '#',"v-on:click" => "changeIndex(3)"} ExportBy_Time
+                      %li
+                        %a{'href' => '#',"v-on:click" => "changeIndex(4)"} ExportBy_Protocol
+                  %br
+                  %br
+                  %div{"v-if" => "index==0"}
+                    %div{"class" => "col-md-3"}
+                      %div{"class" => "input-group"}
+                        %span{"class" => "input-group-addon"} from id:
+                        %input{"type" => "text","class" => "form-control","v-model" => "fromid","name" => "fromid"}
+                    %div{"class" => "col-md-3"}
+                      %div{"class" => "input-group"}
+                        %span{"class" => "input-group-addon"} to id:
+                        %input{"type" => "text","class" => "form-control","v-model" => "toid","name" => "toid"}
+
+                  %div{"v-if" => "index==1"}
+                    %div{"class" => "col-md-3"}
+                      %div{"class" => "input-group"}
+                        %span{"class" => "input-group-addon"} SrcIp
+                        %input{"type" => "text","class" => "form-control","v-model" => "srcip","name" => "srcip"}
+
+                  %div{"v-if" => "index==2"}
+                    %div{"class" => "col-md-3"}
+                      %div{"class" => "input-group"}
+                        %span{"class" => "input-group-addon"} DstIp
+                        %input{"type" => "text","class" => "form-control","v-model" => "dstip","name" => "dstip"}
+
+                  %div{"v-if" => "index==3"}
+                    %div{"class" => "col-md-3"}
+                      %div{"class" => "input-group"}
+                        %span{"class" => "input-group-addon"} from time:
+                        %input{"type" => "text","class" => "form-control","v-model" => "fromtime","name" => "fromtime"}
+                    %div{"class" => "col-md-3"}
+                      %div{"class" => "input-group"}
+                        %span{"class" => "input-group-addon"} to time:
+                        %input{"type" => "text","class" => "form-control","v-model" => "totime","name" => "totime"}
+
+                  %div{"v-if" => "index==4"}
+                    %div{"class" => "col-md-3"}
+                      %div{"class" => "input-group"}
+                        %span{"class" => "input-group-addon"} Protocol
+                        %input{"type" => "text","class" => "form-control","v-model" => "protocol","name" => "protocol"}
+
+              %div.modal-footer
+                %button{"class"=>"btn btn-default","data-dismiss"=>"modal"}Close
+                %button{"class"=>"btn btn-primary","v-on:click"=>"startExport"}{{message_ender}}
+        %br
         %br
       %table.table.table-bordered.table-hover{"id" => "table"}
         %thead
