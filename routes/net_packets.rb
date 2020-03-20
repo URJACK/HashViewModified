@@ -74,7 +74,7 @@ post '/packets/create' do
   netpacket.sessionid = params[:sessionid]
   netpacket.indexname = params[:indexname]
   netpacket.info = params[:info]
-  netpacket.pcappath = params[:pcappath]
+  netpacket.pcappath = params[:pcappath].gsub("&#x2F;","/")
   netpacket.type = params[:type]
   netpacket.opid = params[:opid]
   if netpacket.save
@@ -119,7 +119,7 @@ post '/packets/update' do
     netpacket[:sessionid] = params[:sessionid]
     netpacket[:indexname] = params[:indexname]
     netpacket[:info] = params[:info]
-    netpacket[:pcappath] = params[:pcappath]
+    netpacket[:pcappath] = params[:pcappath].gsub("&#x2F;","/")
     netpacket[:type] = params[:type]
     if netpacket.save
       msg = Messages.new
@@ -154,8 +154,19 @@ get '/packets/delete' do
   end
 end
 
+# initialize the constant params
+Method_Id = 0
+Method_SrcIp = 1
+Method_DstIp = 2
+Method_Time = 3
+Method_Protocol = 4
+# this variable(ExportFilePath) probably need to be changed by each machine
+ExportFilePath = "/home/ffz/Storages/hashview/"
+RequestFilePath = "https://127.0.0.1:4567/packets/download?file="
+
 # the method
 post '/packets/export' do
+  # get form data from the frontend
   methodindex = params[:methodindex]
   opid = params[:opid]
   fromid = params[:fromid]
@@ -165,8 +176,51 @@ post '/packets/export' do
   fromtime = params[:fromtime]
   totime = params[:totime]
   protocol = params[:protocol]
-  @err = "debug info : methodindex:#{methodindex},opid:#{opid},fromid:#{fromid},toid:#{toid},srcip:#{srcip},dstip:#{dstip},fromtime:#{fromtime},totime:#{totime},protocol:#{protocol}"
-  return @err
+  # fileId.tar will be created
+  fileId = (rand*100).to_i
+  if methodindex.to_i == Method_Id
+    packets = NetPackets.fetch("SELECT * FROM netpackets WHERE id >= ? AND id <= ?",fromid,toid)
+  elsif methodindex.to_i == Method_SrcIp
+    packets = NetPackets.fetch("SELECT * FROM netpackets WHERE srcip = ?",srcip)
+  elsif methodindex.to_i == Method_DstIp
+    packets = NetPackets.fetch("SELECT * FROM netpackets WHERE dstip = ?",dstip)
+  elsif methodindex.to_i == Method_Time
+    packets = NetPackets.fetch("SELECT * FROM netpackets WHERE starttime >= ? AND stoptime <= ?",fromtime,totime)
+  elsif methodindex.to_i == Method_Protocol
+    packets = NetPackets.fetch("SELECT * FROM netpackets WHERE protocols = ?",protocol)
+  else
+    return ""
+  end
+  tarStr = "tar zcvf #{ExportFilePath}#{fileId}.tar"
+  if packets != nil
+    packets.each do |pkt|
+      arr = pkt[:pcappath].split('/')
+      if arr.size == 0
+        # it means it didn't have the pcappath
+        break
+      end
+      fileStr = arr[arr.size - 1]
+      dirStr = ""
+      arr.each do |ele|
+        if ele != fileStr
+          dirStr += '/'
+          dirStr += ele
+        end
+      end
+      tarStr += " -C #{dirStr} #{fileStr}"
+    end
+    `#{tarStr}`
+    return "#{RequestFilePath}#{fileId}.tar"
+  else
+    return ""
+  end
+end
+
+get '/packets/download' do
+  file = params[:file]
+  send_file("#{ExportFilePath}#{file}",
+  filename: file,
+  type: "application/octet-stream")
 end
 
 # the method of telling the server to start an operation(if this operation is not exist,a new operation will be created)

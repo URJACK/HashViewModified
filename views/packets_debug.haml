@@ -20,7 +20,7 @@
     }
     let indexname = "sessions2-200305"
     let info = "nothing"
-    let pcappath = "/home/test.Pcap"
+    let pcappath = "/home/test.pcap"
     let type = MITM_TYPE;
     return {
       starttime : starttime,
@@ -70,9 +70,19 @@
     document.getElementById("status").innerHTML = "close"
     clearInterval(timer)
   }
+  let download = function(){  
+    console.log("Download")
+    var src = "https://127.0.0.1:4567/files/a.txt";
+    var form = document.createElement('form');
+    form.action = src;
+    document.getElementsByTagName('body')[0].appendChild(form);
+    form.submit();  
+  }
 
 %div= @data
 Here we're going to create Fake Data
+-# %button{"class"=>"btn btn-default","onclick"=>"download()"} download
+%br
 %p
   input Time
   %input{type:"datetime-local",id:"time"}
