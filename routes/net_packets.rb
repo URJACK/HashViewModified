@@ -1,9 +1,11 @@
-PageSize = 5 
-MessageSurvivingTime = 8
+PacketsConfig = JSON.parse(File.read('config/packets_config.json'))
+PageSize = PacketsConfig['pagesize'].to_i
+MessageSurvivingTime = PacketsConfig['messagesurvivingtime'].to_i
+CodeError = 233
+
 # "Status" means that the instance object of the "Operation" class is in the "Off" or "Open" state"
 StatusOpen = 1
 StatusClose = 0
-CodeError = 233
 # draw the basic url's view
 get '/packets' do
   opid = params[:opid]
@@ -161,7 +163,7 @@ Method_DstIp = 2
 Method_Time = 3
 Method_Protocol = 4
 # this variable(ExportFilePath) probably need to be changed by each machine
-ExportFilePath = "/home/ffz/Storages/hashview/"
+ExportFilePath = PacketsConfig['exportfilepath']
 RequestFilePath = "https://127.0.0.1:4567/packets/download?file="
 
 # the method
