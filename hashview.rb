@@ -41,9 +41,12 @@ end
 
 # Check for valid session before proccessing
 before do
-  unless %w[login register logout v1].include?(request.path_info.split('/')[1])
+  patharr = request.path_info.split('/');
+  unless %w[login register logout v1].include?(patharr[1])
     @settings = Settings.first
-    redirect '/login' unless validSession?
+    if patharr[1] != 'packets' || patharr[2] != 'create'
+      redirect '/login' unless validSession?
+    end
   end
 end
 

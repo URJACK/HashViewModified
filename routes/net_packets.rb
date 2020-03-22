@@ -285,12 +285,12 @@ post '/packets/refresh' do
   return results.to_json
 end
 
-get '/debug' do
+get '/packets/debug' do
   @data = params[:data]
   haml :packets_debug
 end
 
-get '/debugadd' do
+get '/packets/debugadd' do
   netpacket = NetPackets.new
   netpacket.starttime = Time.new
   netpacket.stoptime = Time.new + 5
