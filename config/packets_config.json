@@ -1,5 +1,5 @@
 {
   "pagesize": "7",
-  "messagesurvivingtime": "5000",
+  "messagesurvivingtime": "8",
   "exportfilepath" : "/home/ffz/Storages/hashview/"
 }
