@@ -206,13 +206,8 @@ Sequel.migration do
 
     create_table(:netpackets) do
       primary_key :id, type: :Bignum
-<<<<<<< HEAD
       String :starttime
       String :stoptime
-=======
-      DateTime :starttime
-      DateTime :stoptime
->>>>>>> db9d30350cfd445a5617acbdfa9d29b718d545fb
       String :srcip, size: 45
       String :dstip, size: 45
       Integer :srcport

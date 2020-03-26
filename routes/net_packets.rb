@@ -1,13 +1,9 @@
 PacketsConfig = JSON.parse(File.read('config/packets_config.json'))
 PageSize = PacketsConfig['pagesize'].to_i
 MessageSurvivingTime = PacketsConfig['messagesurvivingtime'].to_i
-<<<<<<< HEAD
 ExecGatherFilePath = PacketsConfig['execgatherfilepath']
 CodeError = 233
 GatherThreadIdPool = {}
-=======
-CodeError = 233
->>>>>>> db9d30350cfd445a5617acbdfa9d29b718d545fb
 
 # "Status" means that the instance object of the "Operation" class is in the "Off" or "Open" state"
 StatusOpen = 1
