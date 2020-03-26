@@ -1,0 +1,54 @@
+!!!
+%html
+  %header
+    %script(src="/js/my.js")
+    
+    :javascript
+      //after each 10 seconds, this is page will try to get new data from the server
+      let GETDATASPAN = 10000;
+      let clock = setInterval(getDataFromServer, GETDATASPAN);
+  %body
+    .container
+      - if @opid != nil && @opid != ""
+        %h1 Homepage > Operation: #{@opid} > Search: #{@data}. 
+      - else
+        %h1 Homepage > Search: #{@data}.
+      %table.table.table-bordered.table-hover
+        %thead
+          %tr
+            %th id
+            %th starttime
+            %th stoptime
+            %th srcip
+            %th dstip
+            %th srcport
+            %th dstport
+            %th packets
+            %th{colspan: "2"}
+        - @netpackets.each do |packet|
+          %tr
+            %th #{packet.id}
+            %th #{packet.starttime}
+            %th #{packet.stoptime}
+            %th #{packet.srcip}
+            %th #{packet.dstip}
+            %th #{packet.srcport}
+            %th #{packet.dstport}
+            %th #{packet.packets}
+            %th
+              %a{href: "/packets/edit?id=#{packet.id}",class: "btn btn-warning"} Edit
+            %th
+              %a{href: "/packets/delete?id=#{packet.id}",class: "btn btn-danger"} Delete
+      - if @opid != nil && @opid != "" then basicChangeUrl = "/packets/search?opid=#{@opid}&data="
+      - else basicChangeUrl = "/packets/search?data="
+      %p
+        - if @pageid > 1
+          %a{href: "#{basicChangeUrl}#{@data}&page=#{@pageid - 1}",class: "btn btn-warning"} Left
+        - else
+          %a{href: "#{basicChangeUrl}#{@data}&page=#{@pageid}",class: "btn btn-default"} Left
+        %span.label.label-info #{@pageid}
+        %a{href: "#{basicChangeUrl}#{@data}&page=#{@pageid + 1}",class: "btn btn-danger"} Right
+      - if @opid != nil && @opid != "" then
+        %a{href: "/packets?opid=#{@opid}",class: "btn btn-primary"} Back to List
+      - else
+        %a{href: "/packets",class: "btn btn-primary"} Back to List

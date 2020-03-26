@@ -1,0 +1,57 @@
+!!!
+%html
+  %body
+    .span15
+      .container
+        .col-md-12
+          .row
+            .page-header
+              %h1
+                Hash Files
+            .row
+              .col-md-10.pull-left
+                The following are a list of Hash Files currently configured in Hashview. All Hash Files are assigned to a single customer. Deleting a Hash File will remove it from the customer, but all cracked hashes will remain in the database.
+      %br
+      %br
+      .container
+        .row
+          .col-md-12
+            .table
+              %table{class: 'table table'}
+                %thead
+                  %tr
+                    %th
+                      %b Customer
+                    %th
+                      %b Hash File
+                    %th
+                      %b hashtype
+                    %th
+                      %b Crack Rate
+                    %th
+                      %b Control
+                %tbody
+                  - if @customers
+                    - @customers.each do |customer|
+                      %tr
+                        %td #{customer.name}
+                        %td
+                        %td
+                      - @hashfiles.each do |hashfile|
+                        - if hashfile.customer_id.to_i == customer.id.to_i
+                          %td
+                          %td
+                            #{hashfile.name}
+                          %td
+                            #{modeToFriendly(@hashtype[hashfile.id])}
+                          %td 
+                            #{@cracked_status[hashfile.id]}
+                          %td
+                            %a.btn.btn-success{href: "/download?hashfile_id=#{hashfile.id}"}
+                              %i.glyphicon.glyphicon-download-alt{title: 'Download'}
+                            %a.btn.btn-primary{href: "/analytics?customer_id=#{customer.id}&hashfile_id=#{hashfile.id}"}
+                              %i.glyphicon.glyphicon-stats{title: 'Display crack stats'}
+                            %a.btn.btn-danger{href: "/hashfiles/delete?hashfile_id=#{hashfile.id}"}
+                              %i.glyphicon.glyphicon-trash{title: 'Delete'}
+                          %tr
+                        %tr

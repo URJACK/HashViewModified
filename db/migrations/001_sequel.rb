@@ -1,0 +1,234 @@
+Sequel.migration do
+  change do
+    create_table(:agents) do
+      primary_key :id, type: :Bignum
+      String :name, size: 100
+      String :src_ip, size: 45
+      String :uuid, size: 60
+      # Status can be 'Pending', 'Authorized', 'Error','Offline', 'Online', 'Working'
+      String :status, size: 40
+      String :hc_status, size: 6000
+      DateTime :heartbeat
+      String :benchmark, size: 6000
+      String :devices, size: 6000
+      Integer :cpu_count
+      Integer :gpu_count
+    end
+
+    create_table(:customers) do
+      primary_key :id, type: :Bignum
+      String :name, size: 40
+      String :description, size: 500
+      Integer :wl_id
+    end
+
+    create_table(:hashcat_settings) do
+      primary_key :id, type: :Bignum
+      String :hc_binpath, size: 2000
+      String :max_task_time, size: 2000
+      Integer :opencl_device_types, default: 0
+      Integer :workload_profile, default: 0
+      TrueClass :gpu_temp_disable, default: false
+      Integer :gpu_temp_abort, default: 0
+      Integer :gpu_temp_retain, default: 0
+      TrueClass :hc_force, default: false
+      TrueClass :optimized_drivers, default: false
+    end
+
+    create_table(:hashes, ignore_index_errors: true) do
+      primary_key :id
+      DateTime :lastupdated
+      String :originalhash, size: 1024
+      Integer :hashtype
+      TrueClass :cracked
+      String :plaintext, size: 256
+
+      index [:hashtype], name: :index_of_hashtypes
+      index [:originalhash], name: :index_of_orignalhashes, unique: true
+    end
+
+    create_table(:hashfilehashes, ignore_index_errors: true) do
+      primary_key :id, type: :Bignum
+      Integer :hash_id
+      String :username, size: 256
+      Integer :hashfile_id
+
+      index [:hash_id], name: :index_hashfilehashes_hash_id
+      index [:hashfile_id], name: :index_hashfilehashes_hashfile_id
+    end
+
+    create_table(:hashfiles) do
+      primary_key :id, type: :Bignum
+      Integer :customer_id
+      String :name, size: 256
+      String :hash_str, size: 256
+      Integer :wl_id
+      Integer :total_run_time, default: 0
+    end
+
+    create_table(:hub_settings) do
+      primary_key :id, type: :Bignum
+      TrueClass :enabled
+      String :status, default: 'unregistered', size: 50, null: false
+      String :email, size: 50
+      String :uuid, size: 50
+      String :auth_key, size: 254
+      Integer :balance, default: 0
+    end
+
+    create_table(:jobs) do
+      primary_key :id, type: :Bignum
+      String :name, size: 50
+      String :owner, size: 40
+      DateTime :updated_at, default: DateTime.parse('2017-08-03T16:06:21.000000000+0000')
+      # Status options should be 'Running', 'Paused', 'Completed', 'Queued', 'Canceled', 'Ready'
+      String :status, size: 100
+      DateTime :queued_at
+      DateTime :started_at
+      DateTime :ended_at
+      Integer :hashfile_id
+      Integer :customer_id
+      TrueClass :notify_completed
+    end
+
+    create_table(:jobtasks) do
+      primary_key :id, type: :Bignum
+      Integer :job_id
+      Integer :task_id
+      String :command, size: 5000
+      # Status options should be 'Running', 'Paused', 'Not Started', 'Completed', 'Queued', 'Failed', 'Canceled', 'Importing'
+      String :status, size: 50
+      Integer :run_time
+      Bignum :keyspace_pos
+      Bignum :keyspace
+    end
+
+    create_table(:rules) do
+      primary_key :id, type: :Bignum
+      DateTime :lastupdated
+      String :name, size: 256
+      String :path, size: 2000
+      String :size, size: 100
+      String :checksum, size: 64
+    end
+
+    create_table(:sessions) do
+      primary_key :id, type: :Bignum
+      String :session_key, size: 128
+      String :username, size: 40, null: false
+    end
+
+    create_table(:settings) do
+      primary_key :id, type: :Bignum
+      String :smtp_server, size: 50
+      String :smtp_sender, size: 50
+      String :smtp_user, size: 50
+      String :smtp_pass, size: 50
+      TrueClass :smtp_use_tls
+      # Options include 'plain', 'login', 'cram_md5', 'none'
+      String :smtp_auth_type, size: 50
+      TrueClass :clientmode
+      String :ui_themes, default: 'Light', size: 50, null: false
+      String :version, size: 5
+      TrueClass :use_dynamic_chunking
+      Bignum :chunk_size, default: 500000
+
+      check Sequel::SQL::BooleanExpression.new(:>=, Sequel::SQL::Identifier.new(:chunk_size), 0)
+    end
+
+    create_table(:taskqueues) do
+      primary_key :id, type: :Bignum
+      Integer :jobtask_id
+      Integer :job_id
+      DateTime :updated_at, default: DateTime.parse('2017-08-03T16:06:21.000000000+0000')
+      DateTime :queued_at
+      # Status options should be 'Running', 'Completed', 'Queued', 'Canceled', 'Paused'
+      String :status, size: 100
+      String :agent_id, size: 2000
+      String :command, size: 4000
+    end
+
+    create_table(:tasks, ignore_index_errors: true) do
+      primary_key :id, type: :Bignum
+      String :name, size: 50
+      String :wl_id, size: 256
+      String :hc_attackmode, size: 25
+      String :hc_rule, size: 50
+      String :hc_mask, size: 50
+      Bignum :keyspace
+
+      check Sequel::SQL::BooleanExpression.new(:>=, Sequel::SQL::Identifier.new(:keyspace), 0)
+
+      index [:name, :hc_mask], name: :ix_uq, unique: true
+    end
+
+    create_table(:task_groups) do
+      primary_key :id, type: :Bignum
+      String :name, size: 255
+      String :tasks, size: 1024
+    end
+
+    create_table(:users) do
+      primary_key :id, null: false, auto_increment: true
+      String :username, size: 40, null: false
+      String :hashed_password, size: 128
+      TrueClass :admin
+      DateTime :created_at, default: DateTime.parse('2017-08-03T16:06:21.000000000+0000')
+      String :phone, size: 50
+      String :email, size: 50
+      TrueClass :mfa
+      String :auth_secret, size: 50
+
+      check Sequel::SQL::BooleanExpression.new(:>=, Sequel::SQL::Identifier.new(:id), 0)
+    end
+
+    create_table(:wordlists) do
+      primary_key :id, type: :Bignum
+      DateTime :lastupdated
+      String :type, size: 25
+      String :scope, size: 25
+      # Scope Options include 'customers', 'hashfiles', 'all'
+      String :name, size: 256
+      String :path, size: 2000
+      String :size, size: 100
+      String :checksum, size: 64
+    end
+
+    create_table(:operations) do
+      primary_key :id, type: :Bignum
+      DateTime :starttime
+      DateTime :stoptime
+      Integer :method
+      # status Ops include '0' means not worked, '1' means worked
+      Integer :status
+      String :name
+    end 
+
+    create_table(:netpackets) do
+      primary_key :id, type: :Bignum
+      String :starttime
+      String :stoptime
+      String :srcip, size: 45
+      String :dstip, size: 45
+      Integer :srcport
+      Integer :dstport
+      Integer :packets
+      String :protocols, size: 35
+      String :sessionid, size: 65
+      String :indexname, size: 50
+      String :info, size: 40
+      String :pcappath, size: 50
+      Integer :type
+      Integer :opid
+    end
+
+    create_table(:messages) do
+      primary_key :id, type: :Bignum
+      # If the message is terminated beyond the current time, the message will be removed.
+      DateTime :deadtime
+      # reference about the Operations
+      Integer :pid
+    end
+
+  end
+end

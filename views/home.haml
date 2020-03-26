@@ -1,0 +1,158 @@
+!!!
+%html
+  %body
+    %p
+    .span15
+      .container
+        .row
+          .col-md-12
+            - if @jumbotron.empty?
+              .jumbotron
+                %center
+                  %h4 Feed me hashes!
+                  %br
+                  %a.btn.btn-primary{href: '/jobs/create'}
+                    Create a New Job
+            - else
+              - @jumbotron.each do |entry|
+                .table
+                  .panel.panel-primary
+                    .panel-heading
+                      %h3.panel-title
+                        %b Customer: #{entry['customer_name']}
+                        %b Job: #{entry['job_name']}
+                    .panel-body
+                      %h3
+                        Hashes Cracked
+                        .badge #{entry['hashfile_cracked']} / #{entry['hashfile_total']}
+                        %p
+                          .progress
+                            .progress-bar.progress-bar-striped.active{'aria-valuemax' => '100', 'aria-valuemin' => '0', 'aria-valuenow' => "#{entry['hashfile_total']}", role: 'progressbar', style: "width: #{entry['hashfile_progress'].to_i.round()}%;min-width: 4em;"} #{entry['hashfile_progress'].to_i.round(1)}%
+                      .row
+                        .col-md-12
+                          %h3 Job Status
+                          .table
+                            %table{class: 'table'}
+                              %tr
+                                %td.col-md-4
+                                  Started At:
+                                %td
+                                  #{entry['job_starttime']}
+                              %tr
+                                %td.col-md-4
+                                  Running Time:
+                                %td
+                                  #{entry['job_runtime']}
+                              %tr
+                                %td.col-md-4
+                                  Cracking Speed
+                                %td
+                                  #{entry['job_crackrate']}
+            /%br
+            - if @active_jobs.empty?
+              .page-header
+                %h2 Job Queue
+              No Hashview jobs are running
+            - else
+              .page-header
+                %h2 Job Queue
+              - @jobs.each do |job|
+                - if job.status == 'Running' || job.status == 'Queued' || job.status == 'Importing'
+                  - @customers.each do |customer|
+                    - if customer.id == job.customer_id
+                      %h3 #{customer.name} - #{job.name}
+                      #accordion.panel-group
+                        .panel.panel-default
+                          - @jobtasks.each do |jt|
+                            - if job.id == jt.job_id
+                              - @tasks.each do |task|
+                                - if task.id == jt.task_id
+                                  - link = rand(36**8).to_s(36)
+                                  .panel-heading
+                                    %a{'data-parent' => '#accordion', 'data-toggle' => 'collapse', href: "#collapse-#{link}" }
+                                      %td
+                                        #{task.name}
+                                    - if jt.status == 'Queued'
+                                      %span.label.label-default.labelfixedwidth.pull-right #{jt.status}
+                                    - elsif jt.status == 'Completed'
+                                      %span.label.label-primary.labelfixedwidth.pull-right #{jt.status}
+                                    - elsif jt.status == 'Running'
+                                      %a.label.label-danger.labelfixedwidth.pull-right{href: "/jobs/stop/#{job.id}/#{task.id}"} Cancel
+                                      %span.label.label-success.labelfixedwidth.pull-right #{jt.status}
+                                    - elsif jt.status == 'Importing'
+                                      %span.label.label-warning.labelfixedwidth.pull-right #{jt.status}
+                                    - elsif jt.status == 'Canceled'
+                                      %span.label.label-default.labelfixedwidth.pull-right #{jt.status}
+                                  - if jt.status == 'Running'
+                                    %div{id: "collapse-#{link}", class: 'panel-collapse collapse in'}
+                                      %p
+                                        %center
+                                          Chunk Assignments
+                                      .panel-body
+                                        - progress = (jt.keyspace_pos.to_f / jt.keyspace.to_f) * 100
+                                        - progress = 0 if progress.nan?
+                                        .progress
+                                          .progress-bar.progress-bar-striped.active{'aria-valuemax' => '100', 'aria-valuemin' => '0', 'aria-valuenow' => "#{progress.round(1)}", role: 'progressbar', style: "width: #{progress.round(1)}%;min-width: 4em;"} #{progress.round(1)}%
+                                        %p
+                                        %ul{class: 'list-group borderless row'}
+                                          - @taskqueues.each do |tq|
+                                            - if jt.id == tq.jobtask_id
+                                              - next if tq.status == 'Completed'
+                                              - next if tq.status == 'Queued' || tq.status == 'Paused'
+                                              %li{:class => 'list-group-item borderless'}
+                                                %table{:class => 'table'}
+                                                  %thead
+                                                    %td
+                                                      %b Agent
+                                                    %td
+                                                      - if tq.status == 'Queued' || tq.status == 'Paused'
+                                                        %b Command
+                                                    %td
+                                                    %td
+                                                  %tbody
+                                                    %td
+                                                      - @agents.each do |agent|
+                                                        - if agent.id.to_i == tq.agent_id.to_i
+                                                          #{agent.name}
+                                                    %td
+                                                      - if tq.status == 'Queued' || tq.status == 'Paused'
+                                                        #{tq.command}
+                                                    %td
+                                                      - if tq.status == 'Running'
+                                                      - elsif tq.status == 'Queued' || tq.status == 'Paused'
+                                                        %span.label.label-default.labelfixedwidth.pull-right Queued
+                                                      - elsif tq.status == 'Importing'
+                                                        %span.label.label-warning.labelfixedwidth.pull-right #{tq.status}
+                                                  - if tq.status == 'Running'
+                                                    %tr
+                                                    %td{:colspan => 6}
+                                                      %table{:class => 'table'}
+                                                        - @agents.each do |agent|
+                                                          - if agent.id.to_i == tq.agent_id.to_i && agent.hc_status.length >= 2
+                                                            - JSON.parse(agent.hc_status).each do |k,v|
+                                                              %tr
+                                                                %td.col-md-4
+                                                                  #{k}
+                                                                %td
+                                                                  #{v}
+                                              .panel-body
+                                                %b Command:
+                                                %p
+                                                #{tq.command}
+                                  - else
+                                    %div{id: "collapse-#{link}", class: "panel-collapse collapse"}
+                                      %p
+                                        %center
+                                          Chunk Assignments
+                                      .panel-body
+                                        - progress = (jt.keyspace_pos.to_f / jt.keyspace.to_f) * 100
+                                        .progress
+                                          - if progress == 100
+                                            .progress-bar.progress-bar-success{'aria-valuemax' => '100', 'aria-valuemin' => '0', 'aria-valuenow' => "#{progress.round(1)}", role: 'progressbar', style: "width: #{progress.round(1)}%;min-width: 4em;"} #{progress.round(1)}%
+                                          -else
+                                            - progress = 0
+                                            .progress-bar.progress-bar{'aria-valuemax' => '100', 'aria-valuemin' => '0', 'aria-valuenow' => "#{progress.round(1)}", role: 'progressbar', style: "width: #{progress.round(1)}%;min-width: 4em;"} #{progress.round(1)}%
+%br
+%br
+%br
+%meta{:content => '30', 'http-equiv' => 'refresh'}

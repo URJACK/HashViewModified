@@ -1,0 +1,101 @@
+%script(src="/js/my.js")
+:javascript
+  let oTime;
+  window.onload = function(){
+    oTime = document.getElementById("time");
+  }
+  let createFakeData = function(){
+    let ipAddress = "192.168.0."
+    let srcip = ipAddress + (Math.floor(Math.random() * 254) + 1)
+    let dstip = ipAddress + (Math.floor(Math.random() * 254) + 1)
+    let srcport = Math.floor(Math.random() * 30000) + 100
+    let dstport = Math.floor(Math.random() * 30000) + 100
+    let starttime = oTime.value
+    let stoptime = oTime.value
+    let packets = Math.floor(Math.random() * 20) + 5
+    let protocols = "http-tcp"
+    let sessionid = "200305-T0I2L-"
+    for(let i = 0 ; i < 18 ; ++i){
+      sessionid += String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    }
+    let indexname = "sessions2-200305"
+    let info = "nothing"
+    let pcappath = "/home/test.pcap"
+    let type = MITM_TYPE;
+    return {
+      starttime : starttime,
+      stoptime : stoptime,
+      srcip : srcip,
+      dstip : dstip,
+      srcport : srcport,
+      dstport : dstport,
+      packets : packets,
+      protocols : protocols,
+      sessionid : sessionid,
+      indexname : indexname,
+      info : info,
+      pcappath : pcappath,
+      type : type,
+      opid : document.getElementById("opid").value,
+      ajax : 1
+    }
+  }
+  let sendFakeData = function(){
+    console.log("Send")
+    $.ajax({
+      url:"/packets/create",
+      data:createFakeData(),
+      method:"POST",
+      success:function(data){
+        console.log("success!!")
+        console.log(data)
+      },
+      error:function(){
+        console.log("failed!!")
+      }
+    })
+  }
+  let timer;
+  let debugSend = function(){
+    let span = document.getElementById("sendspan").value
+    document.getElementById("status").innerHTML = "open"
+    if(span > 1000){
+      clearInterval(timer)
+      timer = setInterval(sendFakeData,span); 
+    }else{
+      alert("Your span setting is not available")
+    }
+  }
+  let stopDebugSend = function(){
+    document.getElementById("status").innerHTML = "close"
+    clearInterval(timer)
+  }
+  let download = function(){  
+    console.log("Download")
+    var src = "https://127.0.0.1:4567/files/a.txt";
+    var form = document.createElement('form');
+    form.action = src;
+    document.getElementsByTagName('body')[0].appendChild(form);
+    form.submit();  
+  }
+
+%div= @data
+Here we're going to create Fake Data
+-# %button{"class"=>"btn btn-default","onclick"=>"download()"} download
+%br
+%p
+  input Time
+  %input{type:"datetime-local",id:"time"}
+%p
+  input opId
+  %input{type:"number",id:"opid",value:"1"}
+%p
+  input createSpan(min : 1000)
+  %input{type:"number",id:"sendspan",value:"5000"}
+%p
+  %input{type:"button",class:"btn btn-warning",onclick:"debugSend()",value:"start creating"}
+%p
+  %input{type:"button",class:"btn btn-danger",onclick:"stopDebugSend()",value:"stop Creating"}
+%p
+  creating Status :
+  %span.label.label-default{id:"status"} close

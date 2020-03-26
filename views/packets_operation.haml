@@ -1,0 +1,54 @@
+!!!
+%html
+  %header
+    %script(src="/js/my.js")
+    
+    :javascript
+      //after each 10 seconds, this is page will try to get new data from the server
+      let GETDATASPAN = 10000;
+      let clock = setInterval(getDataFromServer, GETDATASPAN);
+  %body
+    .container
+      %h1
+
+      %form{'accept-charset' => "UTF-8",action: "/packets/search",method: "get"}
+        %div.input-group
+          %span.input-group-addon Input ip or port
+          %input{name: "data",type: "text",class: "form-control"}
+          %span.input-group-btn
+            %input{type: "submit",value: "Search",class:"btn btn-default"}
+      %table.table.table-bordered.table-hover
+        %thead
+          %tr
+            %th id
+            %th starttime
+            %th stoptime
+            %th srcip
+            %th dstip
+            %th srcport
+            %th dstport
+            %th packets
+            %th{colspan: "2"}
+        - @netpackets.each do |packet|
+          %tr
+            %th #{packet.id}
+            %th #{packet.starttime}
+            %th #{packet.stoptime}
+            %th #{packet.srcip}
+            %th #{packet.dstip}
+            %th #{packet.srcport}
+            %th #{packet.dstport}
+            %th #{packet.packets}
+            %th
+              %a{href: "/packets/edit?id=#{packet.id}",class: "btn btn-warning"} Edit
+            %th
+              %a{href: "/packets/delete?id=#{packet.id}",class: "btn btn-danger"} Delete
+      %p
+        - if @pageid > 1
+          %a{href: "/packets?page=#{@pageid - 1}",class: "btn btn-warning"} Left
+        - else
+          %a{href: "/packets?page=#{@pageid}",class: "btn btn-default"} Left
+        %span.label.label-info #{@pageid}
+        %a{href: "/packets?page=#{@pageid + 1}",class: "btn btn-danger"} Right
+
+      %a{href: "/packets/new",class: "btn btn-primary"} Add a new packet

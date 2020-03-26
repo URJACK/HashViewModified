@@ -1,0 +1,443 @@
+!!!
+%html
+  %header
+    %script(src="/js/my.js")
+    %script(src="/js/vue.js")
+    :javascript
+
+      let CommonWindowOnLoad = function(){
+        //0:id 1:srcip 2:dstip 3:time 4:protocol
+        var oExport = new Vue({
+          el : '#oExport',
+          data : {
+              index : 0,
+              fromid : 0,
+              toid : 0,
+              srcip : "0.0.0.0",
+              dstip : "0.0.0.0",
+              fromtime : "",
+              totime : "",
+              protocol : "",
+              message : "Export By Id",
+              message_ender : "Do it",
+              isReceive : false,
+              receiveDataLink : ""
+
+          },
+          methods: {
+            changeIndex : function (nindex) {
+              oindex = this.index;
+              if(oindex != nindex){
+                //index has changed
+                if(nindex == 0){
+                  this.message = "Export By Id"
+                }else if(nindex == 1){
+                  this.message = "Export By SrcIp"
+                }else if(nindex == 2){
+                  this.message = "Export By DstIp"
+                }else if(nindex == 3){
+                  this.message = "Export By Time"
+                }else{
+                  this.message = "Export By Protocol"
+                }
+              }
+              this.index = nindex;
+            },
+            startExport : function(){
+              let vu = this;
+              this.resetOtherValue();
+              this.isReceive = false;
+              $.ajax({
+                url:"/packets/export",
+                data:{
+                  methodindex : this.index,
+                  opid : "#{@opid}",
+                  fromid : this.fromid,
+                  toid : this.toid,
+                  srcip : this.srcip,
+                  dstip : this.dstip,
+                  fromtime : this.fromtime,
+                  totime : this.totime,
+                  protocol : this.protocol
+                },
+                method:"POST",
+                success:function(data){
+                  console.log(data)
+                  vu.isReceive = true;
+                  vu.receiveDataLink = data
+                },
+                error:function(){
+                  console.log("failed!!")
+                }
+              })
+            },
+            resetOtherValue : function(){
+              let oindex = this.index;
+              if(oindex != 0){
+                this.fromid = 0;
+                this.toid = 0;
+              }
+              if(oindex != 1){
+                this.srcip = "0.0.0.0";
+              }
+              if(oindex != 2){
+                this.dstip = "0.0.0.0";
+              }
+              if(oindex != 3){
+                this.fromtime = "";
+                this.totime = "";
+              }
+              if(oindex != 4){
+                this.protocol = "";
+              }
+            },
+            clearDownloadPath : function(){
+              this.isReceive = false
+            }
+          }
+        });
+      }
+    - if @opid != nil
+      :javascript
+        //"time-span", which means how much time-span you have to request data per time
+        let timeSpan = 5000;
+        let PageSize = 5;
+        let clock,tbody;
+        let opid = #{@opid}
+        //these indexs means the right locations of datas in the web view(packets_index.haml); 
+        let ID_INDEX = 0;
+        let STARTTIME_INDEX = 1;
+        let STOPTIME_INDEX = 2;
+        let SRCIP_INDEX = 3;
+        let DSTIP_INDEX = 4;
+        let SRCPORT_INDEX = 5;
+        let DSTPORT_INDEX = 6;
+        let PACKETS_INDEX = 7;
+        let PROTOCOLS_INDEX = 8;
+        //let SESSIONID_INDEX = 9;
+        //let INDEXNAME_INDEX = 10;
+        //let INFO_INDEX = 11;
+        //let PCAPPATH_INDEX = 12;
+        //let TYPE_INDEX = 13;
+        //let PCAPPATH_INDEX = 9;
+        let TYPE_INDEX = 9;
+        //element 'tr' will add data as its children
+        let trAppendTh = function(tr,data){
+          let th = document.createElement('th');
+          th.innerHTML = data;
+          tr.appendChild(th)
+        }
+        let thAppendA = function(th,className,url,data){
+          let a = document.createElement('a');
+          a.className = className;
+          a.href = url
+          a.innerHTML = data
+          th.appendChild(a)
+        }
+        let refreshViewByTheData = function(datas){
+          for(let i = 0 ; i < datas.length ; ++i){
+            element = document.getElementById(datas[i].id)
+            console.log(element)
+            //to find the data which is needed to be changed
+            if(element != null){
+              element.children[ID_INDEX].innerText = datas[i].id;
+              //element.children[STARTTIME_INDEX].innerText = formZtoUTC(datas[i].starttime)
+              //element.children[STOPTIME_INDEX].innerText = formZtoUTC(datas[i].stoptime)
+              element.children[STARTTIME_INDEX].innerText = datas[i].starttime
+              element.children[STOPTIME_INDEX].innerText = datas[i].stoptime
+              element.children[SRCIP_INDEX].innerText = datas[i].srcip;
+              element.children[SRCPORT_INDEX].innerText = datas[i].srcport;
+              element.children[DSTIP_INDEX].innerText = datas[i].dstip;
+              element.children[DSTPORT_INDEX].innerText = datas[i].dstport;
+              element.children[PACKETS_INDEX].innerText = datas[i].packets;
+              element.children[PROTOCOLS_INDEX].innerText = datas[i].protocols;
+              //element.children[SESSIONID_INDEX].innerText = datas[i].sessionid;
+              //element.children[INDEXNAME_INDEX].innerText = datas[i].indexname;
+              //element.children[INFO_INDEX].innerText = datas[i].info;
+              //element.children[PCAPPATH_INDEX].innerText = datas[i].pcappath;
+              element.children[TYPE_INDEX].innerText = datas[i].type;
+            }else{
+              //it means that the datas didn't fill the view up.In other words,it can be filled with other datas
+              if(tbody.childElementCount < PageSize && datas[i].opid == opid){
+                let tr = document.createElement('tr');
+                tr.id = datas[i].id
+                trAppendTh(tr,datas[i].id);
+                trAppendTh(tr,datas[i].starttime);
+                trAppendTh(tr,datas[i].stoptime);
+                trAppendTh(tr,datas[i].srcip);
+                trAppendTh(tr,datas[i].dstip);
+                trAppendTh(tr,datas[i].srcport);
+                trAppendTh(tr,datas[i].dstport);
+                trAppendTh(tr,datas[i].packets);
+                trAppendTh(tr,datas[i].protocols);
+                //trAppendTh(tr,datas[i].pcappath);
+                trAppendTh(tr,datas[i].type);
+
+                let th = document.createElement('th')
+                thAppendA(th,"btn btn-warning","/packets/edit?opid=#{@opid}&id=" + datas[i].id,"Edit")
+                tr.appendChild(th);
+
+                th = document.createElement('th')
+                thAppendA(th,"btn btn-danger","/packets/delete?opid=#{@opid}&id=" + datas[i].id,"Delete")
+                tr.appendChild(th);
+                tbody.appendChild(tr);
+              }
+            }
+          }
+        }
+        let getDataFromServer = function(){
+          console.log("I'm going to get data from the server");
+          $.ajax({
+            url:"/packets/refresh",
+            data:null,
+            method:"POST",
+            success:function(data){
+              if(typeof data != "object"){
+                data = JSON.parse(data);
+              }
+              refreshViewByTheData(data)
+            },
+            error:function(){
+              clearInterval(clock)
+            }
+          })
+        }
+        clock = setInterval(getDataFromServer,timeSpan)
+        window.onload = function(){
+          tbody = document.getElementById("table").children[1]
+          if(tbody == null){
+            tbody = document.createElement('tbody');
+            document.getElementById("table").appendChild(tbody)
+          }
+          CommonWindowOnLoad();
+        }
+
+    - if @opid == nil
+      :javascript
+        //this value has the relationship with the html content,if you want to change the content in this array,you probably need to change the content located in this page's HTML
+        let methodStrings = ["Method_A","Method_B","Method_C"]
+        //after each 10 seconds, this is page will try to get new data from the server
+        let gatherMethodChange = function(index){
+          console.log(index)
+        }
+        window.onload = function(){
+          var oGather = new Vue({
+              el : '#oGather',
+              data : {
+                  index : 0,
+                  dstip : "",
+                  gateway : "",
+                  message : "MethodA"
+              },
+              methods: {
+                changeIndex : function (nindex) {
+                  oindex = this.index;
+                  if(oindex != nindex){
+                    //index has changed
+                    if(nindex == 0){
+                      this.message = "MethodA"
+                    }else if(nindex == 1){
+                      this.message = "MethodB"
+                    }else{
+                      this.message = "MethodC"
+                    }
+                  }
+                  this.index = nindex;
+                }
+              }
+          });
+          CommonWindowOnLoad();
+          console.log("selection index has been initialized as 'zero'")
+        }
+  %body
+    .container
+      - if @opid == nil
+        %h3
+          %span.label.label-default Homepage
+      - else
+        %h3
+          %span.label.label-default Homepage 
+          %span.label.label-success >
+          %span.label.label-default Operation: #{@opid}
+      %br
+      - if @opid == nil
+        %form{'accept-charset' => "UTF-8",action: "/packets/gather",method: "post"}
+          %div.container#oGather
+            %input{"type" => "hidden","name" => "methodindex","v-model" => "index"}
+            %div{"class" => "btn-group col-md-1", "role" => "group"}
+              %button{'class' => 'btn btn-defualt dropdown-toggle', 'type' => 'button','id' => 'oSelect', 'data-toggle' => 'dropdown', 'aria-haspopup' => 'true','aria-expanded' => 'true'} {{message}}
+              %ul{"class" => "dropdown-menu", "aria-labelledby" => "oSelect"}
+                %li
+                  %a{'href' => '#',"v-on:click" => "changeIndex(0)"} Method_A
+                %li
+                  %a{'href' => '#',"v-on:click" => "changeIndex(1)"} Method_B
+                %li{'role' => 'separator', 'class' => 'divider'}
+                %li
+                  %a{'href' => '#',"v-on:click" => "changeIndex(2)"} Method_C
+            %div{"v-if" => "index==2","class" => "col-md-8"}
+              %div{"class" => "col-md-6"}
+                %div{"class" => "input-group"}
+                  %span{"class" => "input-group-addon"} dstip
+                  %input{"type" => "text","class" => "form-control","v-model" => "dstip","name" => "dstip"}
+              %div{"class" => "col-md-6"}
+                %div{"class" => "input-group"}
+                  %span{"class" => "input-group-addon"} gateway
+                  %input{"type" => "text","class" => "form-control","v-model" => "gateway","name" => "gateway"}
+            %div{"class" => "col-md-2"}
+              %button{"class" => "btn btn-default"} Start New Gathering
+        %br
+      - else
+        %form{'accept-charset' => "UTF-8",action: "/packets/stopgather",method: "post"}
+          %input{"type" => "hidden","name" => "opid","value" => "#{@opid}"}
+          %div.container
+            %div{"class" => "col-md-2"}
+              %button{"class" => "btn btn-default"} Stop This Gathering
+      %div.container
+        %div.col-md-4
+          %form{'accept-charset' => "UTF-8",action: "/packets/search",method: "get"}
+            %div.input-group
+              %span.input-group-addon Input ip or port
+              %input{name: "opid",type: "hidden",value: "#{@opid}"}
+              %input{name: "data",type: "text",class: "form-control"}
+              %span.input-group-btn
+                %input{type: "submit",value: "Search",class:"btn btn-default"}
+          
+        %div.col-md-2
+          %button{"class" => "btn btn-warning","data-toggle" => "modal", "data-target" => "#myModal"} export packets
+        %div{"class" => "modal fade", "id" => "myModal","tabindex" => "-1","role" => "dialog","aria-labelledby" => "myModalLabel"}
+          %div{"class" => "modal-dialog", "role"=>"document"}
+            %div.modal-content#oExport
+              %div.modal-header
+                %h4{"class"=>"modal-title", "id"=>"myModalLabel"}Export Netpackets
+              %div.modal-body
+                %div.container
+                  %input{"type" => "hidden","name" => "methodindex","v-model" => "index"}
+                  %input{"type" => "hidden","name" => "opid","value" => "#{@opid}"}
+                  %div{"class" => "btn-group ", "role" => "group"}
+                    %button{'class' => 'btn btn-defualt dropdown-toggle', 'type' => 'button','id' => 'oSelect', 'data-toggle' => 'dropdown', 'aria-haspopup' => 'true','aria-expanded' => 'true'} {{message}}
+                    %ul{"class" => "dropdown-menu", "aria-labelledby" => "oSelect"}
+                      %li
+                        %a{'href' => '#',"v-on:click" => "changeIndex(0)"} ExportBy_Id
+                      %li{'role' => 'separator', 'class' => 'divider'}
+                      %li
+                        %a{'href' => '#',"v-on:click" => "changeIndex(1)"} ExportBy_SrcIp
+                      %li
+                        %a{'href' => '#',"v-on:click" => "changeIndex(2)"} ExportBy_DstIp
+                      %li{'role' => 'separator', 'class' => 'divider'}
+                      %li
+                        %a{'href' => '#',"v-on:click" => "changeIndex(3)"} ExportBy_Time
+                      %li
+                        %a{'href' => '#',"v-on:click" => "changeIndex(4)"} ExportBy_Protocol
+                  %br
+                  %br
+                  %div{"v-if" => "index==0"}
+                    %div{"class" => "col-md-3"}
+                      %div{"class" => "input-group"}
+                        %span{"class" => "input-group-addon"} from id:
+                        %input{"type" => "text","class" => "form-control","v-model" => "fromid","name" => "fromid"}
+                    %div{"class" => "col-md-3"}
+                      %div{"class" => "input-group"}
+                        %span{"class" => "input-group-addon"} to id:
+                        %input{"type" => "text","class" => "form-control","v-model" => "toid","name" => "toid"}
+
+                  %div{"v-if" => "index==1"}
+                    %div{"class" => "col-md-3"}
+                      %div{"class" => "input-group"}
+                        %span{"class" => "input-group-addon"} SrcIp
+                        %input{"type" => "text","class" => "form-control","v-model" => "srcip","name" => "srcip"}
+
+                  %div{"v-if" => "index==2"}
+                    %div{"class" => "col-md-3"}
+                      %div{"class" => "input-group"}
+                        %span{"class" => "input-group-addon"} DstIp
+                        %input{"type" => "text","class" => "form-control","v-model" => "dstip","name" => "dstip"}
+
+                  %div{"v-if" => "index==3"}
+                    %div.container
+                      %div{"class" => "col-md-3"}
+                        %div{"class" => "input-group"}
+                          %span{"class" => "input-group-addon"} from time:
+                          %input{"type" => "datetime-local","class" => "form-control","v-model" => "fromtime","name" => "fromtime"}
+                    %div.container
+                      %div{"class" => "col-md-3"}
+                        %div{"class" => "input-group"}
+                          %span{"class" => "input-group-addon"} to time:
+                          %input{"type" => "datetime-local","class" => "form-control","v-model" => "totime","name" => "totime"}
+
+                  %div{"v-if" => "index==4"}
+                    %div{"class" => "col-md-3"}
+                      %div{"class" => "input-group"}
+                        %span{"class" => "input-group-addon"} Protocol
+                        %input{"type" => "text","class" => "form-control","v-model" => "protocol","name" => "protocol"}
+                %br
+                %div{"v-if"=>"isReceive"}
+                  %div{"class"=>"alert alert-danger alert-dismissible fade in", "role"=>"alert"}
+                    %h4 Actions have been done.
+                    %p 
+                      you can download by click this link: 
+                      %a{"v-bind:href"=>"receiveDataLink"} {{receiveDataLink}}
+                    %p
+                      If you can't donwload the file in that link:
+                      %br
+                      1`Is the pcappath really worked?
+                      %br
+                      2`If the match condition does not find any of the records, the generated .rar file is invalid 
+                    %p
+                      %button{"v-on:click"=>"clearDownloadPath","class"=>"btn btn-secondary"} Clear Link
+
+              %div.modal-footer
+                %button{"class"=>"btn btn-default","data-dismiss"=>"modal"}Close
+                %button{"class"=>"btn btn-primary","v-on:click"=>"startExport"}{{message_ender}}
+        %br
+        %br
+      %table.table.table-bordered.table-hover{"id" => "table"}
+        %thead
+          %tr
+            %th id
+            %th starttime
+            %th stoptime
+            %th srcip
+            %th dstip
+            %th srcport
+            %th dstport
+            %th packets
+            %th protocols
+            -# %th sessionid
+            -# %th indexname
+            -# %th info
+            -# %th pcappath
+            %th type
+            %th{colspan: "2"}
+        - @netpackets.each do |packet|
+          %tr{"id" => "#{packet.id}"}
+            %th #{packet.id}
+            %th #{packet.starttime}
+            %th #{packet.stoptime}
+            %th #{packet.srcip}
+            %th #{packet.dstip}
+            %th #{packet.srcport}
+            %th #{packet.dstport}
+            %th #{packet.packets}
+            %th #{packet.protocols}
+            -# %th #{packet.sessionid}
+            -# %th #{packet.indexname}
+            -# %th #{packet.info}
+            -# %th #{packet.pcappath}
+            %th #{packet.type}
+            %th
+              %a{href: "/packets/edit?opid=#{@opid}&id=#{packet.id}",class: "btn btn-warning"} Edit
+            %th
+              %a{href: "/packets/delete?opid=#{@opid}&id=#{packet.id}",class: "btn btn-danger"} Delete
+      - if @opid == nil then basicChangeUrl = "/packets?page="
+      - else basicChangeUrl = "/packets?opid=#{@opid}&page="
+      %p
+        - if @pageid > 1
+          %a{href: "#{basicChangeUrl}#{@pageid - 1}",class: "btn btn-warning"} Left
+        - else
+          %a{href: "#{basicChangeUrl}#{@pageid}",class: "btn btn-default"} Left
+        %span.label.label-info #{@pageid}
+        %a{href: "#{basicChangeUrl}#{@pageid + 1}",class: "btn btn-danger"} Right
+
+      - if @opid != nil
+        %a{href: "/packets/new?opid=#{@opid}",class: "btn btn-warning"} Add a new packet
+        %a{href: "/packets",class: "btn btn-primary"} Back
