@@ -1,10 +1,6 @@
 {
   "pagesize": "7",
   "messagesurvivingtime": "8",
-<<<<<<< HEAD
   "exportfilepath" : "/home/ffz/Storages/hashview/",
   "execgatherfilepath" : "/home/ffz/Desktop/gather"
-=======
-  "exportfilepath" : "/home/ffz/Storages/hashview/"
->>>>>>> db9d30350cfd445a5617acbdfa9d29b718d545fb
 }
