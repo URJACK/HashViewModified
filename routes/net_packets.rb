@@ -1,9 +1,13 @@
 PacketsConfig = JSON.parse(File.read('config/packets_config.json'))
 PageSize = PacketsConfig['pagesize'].to_i
 MessageSurvivingTime = PacketsConfig['messagesurvivingtime'].to_i
+<<<<<<< HEAD
 ExecGatherFilePath = PacketsConfig['execgatherfilepath']
 CodeError = 233
 GatherThreadIdPool = {}
+=======
+CodeError = 233
+>>>>>>> db9d30350cfd445a5617acbdfa9d29b718d545fb
 
 # "Status" means that the instance object of the "Operation" class is in the "Off" or "Open" state"
 StatusOpen = 1
@@ -241,13 +245,17 @@ post '/packets/gather' do
   @netpackets = []
   @pageid = 1
   @opid = operation.id
+<<<<<<< HEAD
   # create a sub process to gather infomation,and push its id into the "GTIP"
   GatherThreadIdPool[operation.id] = spawn("#{ExecGatherFilePath} #{operation.id}")
+=======
+>>>>>>> db9d30350cfd445a5617acbdfa9d29b718d545fb
   haml :packets_index
 end
 
 # this method will stop the specified "Operation" object
 post '/packets/stopgather' do
+<<<<<<< HEAD
   opid = params[:opid].to_i
   operation = Operations.find(id: opid)
   if operation != nil
@@ -266,6 +274,18 @@ post '/packets/stopgather' do
     # can't find the right "Operation" instance object
     @err = "this operation has lost"
     haml :packets_error
+=======
+  operation = Operations.find(id: params[:opid])
+  if operation != nil
+    operation[:stoptime] = Time.new
+    operation[:status] = false
+    operation.save
+    # to set the status as "close" is successful
+    return true
+  else
+    # can't find the right "Operation" instance object
+    return false
+>>>>>>> db9d30350cfd445a5617acbdfa9d29b718d545fb
   end
 end
 

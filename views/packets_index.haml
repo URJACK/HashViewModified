@@ -286,12 +286,15 @@
             %div{"class" => "col-md-2"}
               %button{"class" => "btn btn-default"} Start New Gathering
         %br
+<<<<<<< HEAD
       - else
         %form{'accept-charset' => "UTF-8",action: "/packets/stopgather",method: "post"}
           %input{"type" => "hidden","name" => "opid","value" => "#{@opid}"}
           %div.container
             %div{"class" => "col-md-2"}
               %button{"class" => "btn btn-default"} Stop This Gathering
+=======
+>>>>>>> db9d30350cfd445a5617acbdfa9d29b718d545fb
       %div.container
         %div.col-md-4
           %form{'accept-charset' => "UTF-8",action: "/packets/search",method: "get"}
