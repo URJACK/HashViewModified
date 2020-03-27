@@ -237,6 +237,7 @@ post '/packets/gather' do
   operation = Operations.new
   operation[:starttime] = Time.new
   operation[:status] = StatusOpen
+  operation[:methodindex] = methodindex
   operation.save
   @netpackets = []
   @pageid = 1
@@ -251,6 +252,7 @@ post '/packets/stopgather' do
   opid = params[:opid].to_i
   operation = Operations.find(id: opid)
   if operation != nil
+    methodindex = operation[:methodindex]
     operation[:stoptime] = Time.new
     operation[:status] = false
     pid = GatherThreadIdPool[opid]
