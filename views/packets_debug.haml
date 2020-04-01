@@ -70,18 +70,29 @@
     document.getElementById("status").innerHTML = "close"
     clearInterval(timer)
   }
-  let download = function(){  
-    console.log("Download")
-    var src = "https://127.0.0.1:4567/files/a.txt";
-    var form = document.createElement('form');
-    form.action = src;
-    document.getElementsByTagName('body')[0].appendChild(form);
-    form.submit();  
+  let debug = function(){  
+    console.log("debug")
+    // var src = "https://127.0.0.1:4567/files/a.txt";
+    // var form = document.createElement('form');
+    // form.action = src;
+    // document.getElementsByTagName('body')[0].appendChild(form);
+    // form.submit();
+    $.ajax({
+      url:"/packets/debug2",
+      data:null,
+      method:"POST",
+      success:function(data){
+        console.log(data)
+      },
+      error:function(){
+        console.log("failed!!")
+      }
+    })
   }
 
 %div= @data
 Here we're going to create Fake Data
--# %button{"class"=>"btn btn-default","onclick"=>"download()"} download
+%button{"class"=>"btn btn-default","onclick"=>"debug()"} Debug
 %br
 %p
   input Time

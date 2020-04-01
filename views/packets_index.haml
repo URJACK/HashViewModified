@@ -3,11 +3,18 @@
   %header
     %script(src="/js/my.js")
     %script(src="/js/vue.js")
+    - if @opid == nil then basicChangeUrl = "/packets?page="
+    - else basicChangeUrl = "/packets?opid=#{@opid}&page="
     :javascript
-
-      let CommonWindowOnLoad = function(){
+      var oExport,oInfo,oPagenumber,oTurnPage,maxpageid;
+      //"oldLen",will record the total nums of the netpackets(which opid equals the @opid)
+      var oldLen = #{@packetscount};
+      var PageSize = #{@pagesize};
+      var pageid = #{@pageid};
+      var basicChangeUrl = "#{basicChangeUrl}"
+      var CommonWindowOnLoad = function(){
         //0:id 1:srcip 2:dstip 3:time 4:protocol
-        var oExport = new Vue({
+        oExport = new Vue({
           el : '#oExport',
           data : {
               index : 0,
@@ -96,12 +103,51 @@
             }
           }
         });
+        oInfo = new Vue({
+          el : '#oInfo',
+          data : {
+            info : "none",
+            display : false,
+            timer : null
+          },
+          methods : {
+            show : function(info){
+              let vu = this;
+              this.info = info;
+              this.display = true;
+              clearTimeout(this.timer)
+              this.timer = setTimeout(function(){
+                vu.display = false
+              },2200)
+            }
+          }
+        })
+        oPagenumber = document.getElementById("oPagenumber");
+        oTurnPage = document.getElementById("oTurnPage");
+        SetMaxPageSize()
+      }
+      var SetMaxPageSize = function(){
+        console.log("oldlen:",oldLen)
+        console.log("pagesize:",PageSize)
+        maxpageid = Math.floor((oldLen-1)/PageSize) + 1;
+        if(maxpageid == 0){
+          maxpageid = 1;
+        }
+        oPagenumber.innerText = pageid + " / " + maxpageid
+      }
+      var turnpage = function(){
+        if(oTurnPage.value < 1){
+          oInfo.show("the pageid can't be smaller than 1")
+        }else if(oTurnPage.value > maxpageid){
+          oInfo.show("the pageid can't be bigger than maxpageid")
+        }else{
+          location.href = basicChangeUrl + oTurnPage.value
+        }
       }
     - if @opid != nil
       :javascript
         //"time-span", which means how much time-span you have to request data per time
         let timeSpan = 5000;
-        let PageSize = 5;
         let clock,tbody;
         let opid = #{@opid}
         //these indexs means the right locations of datas in the web view(packets_index.haml); 
@@ -137,7 +183,6 @@
         let refreshViewByTheData = function(datas){
           for(let i = 0 ; i < datas.length ; ++i){
             element = document.getElementById(datas[i].id)
-            console.log(element)
             //to find the data which is needed to be changed
             if(element != null){
               element.children[ID_INDEX].innerText = datas[i].id;
@@ -173,9 +218,9 @@
                 //trAppendTh(tr,datas[i].pcappath);
                 trAppendTh(tr,datas[i].type);
 
-                let th = document.createElement('th')
-                thAppendA(th,"btn btn-warning","/packets/edit?opid=#{@opid}&id=" + datas[i].id,"Edit")
-                tr.appendChild(th);
+                //let th = document.createElement('th')
+                //thAppendA(th,"btn btn-warning","/packets/edit?opid=#{@opid}&id=" + datas[i].id,"Edit")
+                //tr.appendChild(th);
 
                 th = document.createElement('th')
                 thAppendA(th,"btn btn-danger","/packets/delete?opid=#{@opid}&id=" + datas[i].id,"Delete")
@@ -185,17 +230,35 @@
             }
           }
         }
+        //newLen must be bigger than oldLen (at least 1 more bigger)
+        let increaseDataAction = function(odl,nwl){
+          let dateStr = new Date().toLocaleString()
+          if(nwl - odl == 1){
+            oInfo.show("a new item had been added --" + dateStr)
+          }else{
+            oInfo.show((nwl - odl) + " items had been added --" + dateStr)
+          }
+        }
         let getDataFromServer = function(){
           console.log("I'm going to get data from the server");
           $.ajax({
             url:"/packets/refresh",
-            data:null,
+            data: {
+              opid : "#{@opid}"
+            },
             method:"POST",
             success:function(data){
               if(typeof data != "object"){
                 data = JSON.parse(data);
               }
-              refreshViewByTheData(data)
+              if(oldLen != null){
+                if(data.len - oldLen > 0){
+                  increaseDataAction(oldLen,data.len);
+                }
+              }
+              oldLen = data.len;
+              SetMaxPageSize()
+              refreshViewByTheData(data.arr)
             },
             error:function(){
               clearInterval(clock)
@@ -292,6 +355,7 @@
           %div.container
             %div{"class" => "col-md-2"}
               %button{"class" => "btn btn-default"} Stop This Gathering
+        %br
       %div.container
         %div.col-md-4
           %form{'accept-charset' => "UTF-8",action: "/packets/search",method: "get"}
@@ -424,20 +488,27 @@
             -# %th #{packet.info}
             -# %th #{packet.pcappath}
             %th #{packet.type}
-            %th
-              %a{href: "/packets/edit?opid=#{@opid}&id=#{packet.id}",class: "btn btn-warning"} Edit
+            -# %th
+            -#   %a{href: "/packets/edit?opid=#{@opid}&id=#{packet.id}",class: "btn btn-warning"} Edit
             %th
               %a{href: "/packets/delete?opid=#{@opid}&id=#{packet.id}",class: "btn btn-danger"} Delete
-      - if @opid == nil then basicChangeUrl = "/packets?page="
-      - else basicChangeUrl = "/packets?opid=#{@opid}&page="
-      %p
-        - if @pageid > 1
-          %a{href: "#{basicChangeUrl}#{@pageid - 1}",class: "btn btn-warning"} Left
-        - else
-          %a{href: "#{basicChangeUrl}#{@pageid}",class: "btn btn-default"} Left
-        %span.label.label-info #{@pageid}
-        %a{href: "#{basicChangeUrl}#{@pageid + 1}",class: "btn btn-danger"} Right
-
-      - if @opid != nil
-        %a{href: "/packets/new?opid=#{@opid}",class: "btn btn-warning"} Add a new packet
-        %a{href: "/packets",class: "btn btn-primary"} Back
+      %div{"class" => "alert alert-info","role" => "alert","id"=>"oInfo","v-if"=>"display"} {{info}}
+      %div.container
+        %div.col-md-2
+          - if @pageid > 1
+            %a{href: "#{basicChangeUrl}#{@pageid - 1}",class: "btn btn-warning"} Left
+          - else
+            %a{href: "#{basicChangeUrl}#{@pageid}",class: "btn btn-default"} Left
+          %span.label.label-info#oPagenumber #{@pageid}
+          %a{href: "#{basicChangeUrl}#{@pageid + 1}",class: "btn btn-danger"} Right
+        %div.col-md-3
+          %diu.input-group
+            %span{"class"=>"input-group-addon"}Turn to Page
+            %input{"type"=>"number","class"=>"form-control","id"=>"oTurnPage"}
+        %div.col-md-1
+          %button{"class"=>"btn btn-default","onclick"=>"turnpage()"} Go
+      %br
+      %div
+        - if @opid != nil
+          %a{href: "/packets/new?opid=#{@opid}",class: "btn btn-warning"} Add a new packet
+          %a{href: "/packets",class: "btn btn-primary"} Back to Homepage

@@ -4,13 +4,14 @@ MessageSurvivingTime = PacketsConfig['messagesurvivingtime'].to_i
 ExecGatherFilePath = PacketsConfig['execgatherfilepath']
 CodeError = 233
 GatherThreadIdPool = {}
+GatherCountsPool = {}
 
 # "Status" means that the instance object of the "Operation" class is in the "Off" or "Open" state"
 StatusOpen = 1
 StatusClose = 0
 # draw the basic url's view
 get '/packets' do
-  opid = params[:opid]
+  opid = params[:opid].to_i
   # pageid is different from opid,its default value is 1,
   page = params[:page]
   if page == nil
@@ -18,20 +19,30 @@ get '/packets' do
   end
   page = page.to_i
   # process this specific situation
-  if opid == ""
+  if opid == 0
     opid = nil
   end
   if opid == nil
+    if GatherCountsPool[0] == nil
+      GatherCountsPool[0] = NetPackets.fetch("SELECT COUNT(id) AS len FROM netpackets;")[0][:len]
+    end
     @netpackets = NetPackets.limit(PageSize).offset((page - 1) * PageSize)
     @pageid = page
     @opid = opid
+    @pagesize = PageSize
+    @packetscount = GatherCountsPool[0]
     haml :packets_index
   else
     @operation = Operations.find(id: opid)
     if @operation != nil
+      if GatherCountsPool[opid] == nil
+        GatherCountsPool[opid] = NetPackets.fetch("SELECT COUNT(id) AS len FROM netpackets WHERE opid = ?;",opid)[0][:len]
+      end
       @netpackets = NetPackets.where(opid: opid).limit(PageSize).offset((page - 1) * PageSize)
       @pageid = page
       @opid = opid
+      @pagesize = PageSize
+      @packetscount = GatherCountsPool[opid]
       haml :packets_index
     else
       @err = "this operation(opid:#{opid}) is not exist"
@@ -81,11 +92,22 @@ post '/packets/create' do
   netpacket.pcappath = params[:pcappath].gsub("&#x2F;","/")
   netpacket.type = params[:type]
   netpacket.opid = params[:opid]
+  opid = params[:opid].to_i
   if netpacket.save
     msg = Messages.new
     msg.pid = netpacket.id;
     msg.deadtime = Time.new + MessageSurvivingTime
     msg.save
+    if GatherCountsPool[0] == nil
+      GatherCountsPool[0] = NetPackets.fetch("SELECT COUNT(id) AS len FROM netpackets;")[0][:len]
+    else
+      GatherCountsPool[0] = GatherCountsPool[0] + 1;
+    end
+    if GatherCountsPool[opid] != nil
+      GatherCountsPool[opid] = GatherCountsPool[opid] + 1
+    else
+      GatherCountsPool[opid] = NetPackets.fetch("SELECT COUNT(id) AS len FROM netpackets WHERE opid = ?;",opid)[0][:len]
+    end
     if params[:ajax].to_i == 0
       redirect "/packets?opid=#{params[:opid]}"
     else
@@ -242,6 +264,8 @@ post '/packets/gather' do
   @netpackets = []
   @pageid = 1
   @opid = operation.id
+  @pagesize = PageSize
+  @packetscount = 0
   # create a sub process to gather infomation,and push its id into the "GTIP"
   GatherThreadIdPool[operation.id] = spawn("#{ExecGatherFilePath} #{operation.id}")
   haml :packets_index
@@ -282,7 +306,14 @@ post '/packets/operationstatus' do
 end
 
 post '/packets/refresh' do
-  results = []
+  results = {}
+  arr = []
+  opid = params[:opid].to_i
+  len = GatherCountsPool[opid]
+  # if the len didn't initialize,we will initialize it by searching some datas from the mysql
+  if len == nil
+    len = NetPackets.fetch("SELECT COUNT(id) AS len FROM netpackets WHERE opid = ?;",opid)[0][:len]
+  end
   msg = Messages.first
   if msg != nil
     while(Time.new > msg.deadtime)
@@ -295,9 +326,11 @@ post '/packets/refresh' do
     msgs = Messages.all
     msgs.each do |ele|
       packet = NetPackets.find(id: ele[:pid])
-      results.push packet
+      arr.push packet
     end
   end
+  results["arr"] = arr
+  results["len"] = len
   return results.to_json
 end
 
@@ -306,15 +339,7 @@ get '/packets/debug' do
   haml :packets_debug
 end
 
-get '/packets/debugadd' do
-  netpacket = NetPackets.new
-  netpacket.starttime = Time.new
-  netpacket.stoptime = Time.new + 5
-  netpacket.srcip = "192.168.0.2"
-  netpacket.dstip = "192.168.0.2"
-  netpacket.srcport = 3300
-  netpacket.dstport = 3301
-  netpacket.packets = 5
-  netpacket.save
-  redirect to("/home")
+post '/packets/debug2' do
+  datas = NetPackets.fetch("SELECT COUNT(id) as len from netpackets;")
+  return datas[0][:len].to_s
 end
