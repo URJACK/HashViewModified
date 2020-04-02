@@ -12,6 +12,8 @@
     let dstport = Math.floor(Math.random() * 30000) + 100
     let starttime = oTime.value
     let stoptime = oTime.value
+    starttime = new Date(starttime).getTime()
+    stoptime = new Date(stoptime).getTime()
     let packets = Math.floor(Math.random() * 20) + 5
     let protocols = "http-tcp"
     let sessionid = "200305-T0I2L-"

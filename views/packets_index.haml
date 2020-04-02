@@ -6,7 +6,7 @@
     - if @opid == nil then basicChangeUrl = "/packets?page="
     - else basicChangeUrl = "/packets?opid=#{@opid}&page="
     :javascript
-      var oExport,oInfo,oPagenumber,oTurnPage,maxpageid;
+      var oExport,oInfo,oPagenumber,oTurnPage,maxpageid,tbody;
       //"oldLen",will record the total nums of the netpackets(which opid equals the @opid)
       var oldLen = #{@packetscount};
       var PageSize = #{@pagesize};
@@ -125,10 +125,14 @@
         oPagenumber = document.getElementById("oPagenumber");
         oTurnPage = document.getElementById("oTurnPage");
         SetMaxPageSize()
+        tbody = document.getElementById("table").children[1]
+        if(tbody == null){
+          tbody = document.createElement('tbody');
+          document.getElementById("table").appendChild(tbody)
+        }
+        bootProcedureOfTimeStamp()
       }
       var SetMaxPageSize = function(){
-        console.log("oldlen:",oldLen)
-        console.log("pagesize:",PageSize)
         maxpageid = Math.floor((oldLen-1)/PageSize) + 1;
         if(maxpageid == 0){
           maxpageid = 1;
@@ -144,11 +148,21 @@
           location.href = basicChangeUrl + oTurnPage.value
         }
       }
+      var fromTimeStampToString = function(stamp){
+        let datetime = new Date(stamp);
+        return datetime.toLocaleString();
+      }
+      var bootProcedureOfTimeStamp = function(){
+        for(let i = 0 ; i < tbody.childElementCount ; ++i){
+          tbody.children[i].children[1].innerText = fromTimeStampToString(tbody.children[i].children[1].innerText);
+          tbody.children[i].children[2].innerText = fromTimeStampToString(tbody.children[i].children[2].innerText);
+        }
+      }
     - if @opid != nil
       :javascript
         //"time-span", which means how much time-span you have to request data per time
         let timeSpan = 5000;
-        let clock,tbody;
+        let clock;
         let opid = #{@opid}
         //these indexs means the right locations of datas in the web view(packets_index.haml); 
         let ID_INDEX = 0;
@@ -188,8 +202,8 @@
               element.children[ID_INDEX].innerText = datas[i].id;
               //element.children[STARTTIME_INDEX].innerText = formZtoUTC(datas[i].starttime)
               //element.children[STOPTIME_INDEX].innerText = formZtoUTC(datas[i].stoptime)
-              element.children[STARTTIME_INDEX].innerText = datas[i].starttime
-              element.children[STOPTIME_INDEX].innerText = datas[i].stoptime
+              element.children[STARTTIME_INDEX].innerText = fromTimeStampToString(datas[i].starttime)
+              element.children[STOPTIME_INDEX].innerText = fromTimeStampToString(datas[i].stoptime)
               element.children[SRCIP_INDEX].innerText = datas[i].srcip;
               element.children[SRCPORT_INDEX].innerText = datas[i].srcport;
               element.children[DSTIP_INDEX].innerText = datas[i].dstip;
@@ -207,8 +221,8 @@
                 let tr = document.createElement('tr');
                 tr.id = datas[i].id
                 trAppendTh(tr,datas[i].id);
-                trAppendTh(tr,datas[i].starttime);
-                trAppendTh(tr,datas[i].stoptime);
+                trAppendTh(tr,fromTimeStampToString(datas[i].starttime));
+                trAppendTh(tr,fromTimeStampToString(datas[i].stoptime));
                 trAppendTh(tr,datas[i].srcip);
                 trAppendTh(tr,datas[i].dstip);
                 trAppendTh(tr,datas[i].srcport);
@@ -267,11 +281,6 @@
         }
         clock = setInterval(getDataFromServer,timeSpan)
         window.onload = function(){
-          tbody = document.getElementById("table").children[1]
-          if(tbody == null){
-            tbody = document.createElement('tbody');
-            document.getElementById("table").appendChild(tbody)
-          }
           CommonWindowOnLoad();
         }
 
@@ -306,6 +315,43 @@
                     }
                   }
                   this.index = nindex;
+                },
+                startGather : function(){
+                  console.log("start gather")
+                  let index = this.index;
+                  let dstip = this.dstip;
+                  let gateway = this.gateway;
+                  $.ajax({
+                    url:"/packets/gather",
+                    data:{
+                      methodindex : index,
+                      dstip : dstip,
+                      gateway : gateway
+                    },
+                    method:"POST",
+                    success:function(data){
+                      if(typeof data != 'object'){
+                        data = JSON.parse(data);
+                      }
+                      if(data.status){
+                        oInfo.show("a new operation has been created,now you can turn to the new operation!")
+                        location.href = "/packets?opid=" + data.id
+                      }else{
+                        oInfo.show("there's a operation:(id:" + data.id + ") running,you can't start a new gathering")
+                      }
+                    },
+                    error:function(){
+                      console.log("failed!!")
+                    }
+                  })
+                },
+                turnToGather : function(){
+                  //var src = "https://127.0.0.1:4567/files/a.txt";
+                  var src = "/packets/turntogather";
+                  var form = document.createElement('form');
+                  form.action = src;
+                  document.getElementsByTagName('body')[0].appendChild(form);
+                  form.submit();
                 }
               }
           });
@@ -324,30 +370,31 @@
           %span.label.label-default Operation: #{@opid}
       %br
       - if @opid == nil
-        %form{'accept-charset' => "UTF-8",action: "/packets/gather",method: "post"}
-          %div.container#oGather
-            %input{"type" => "hidden","name" => "methodindex","v-model" => "index"}
-            %div{"class" => "btn-group col-md-1", "role" => "group"}
-              %button{'class' => 'btn btn-defualt dropdown-toggle', 'type' => 'button','id' => 'oSelect', 'data-toggle' => 'dropdown', 'aria-haspopup' => 'true','aria-expanded' => 'true'} {{message}}
-              %ul{"class" => "dropdown-menu", "aria-labelledby" => "oSelect"}
-                %li
-                  %a{'href' => '#',"v-on:click" => "changeIndex(0)"} Method_A
-                %li
-                  %a{'href' => '#',"v-on:click" => "changeIndex(1)"} Method_B
-                %li{'role' => 'separator', 'class' => 'divider'}
-                %li
-                  %a{'href' => '#',"v-on:click" => "changeIndex(2)"} Method_C
-            %div{"v-if" => "index==2","class" => "col-md-8"}
-              %div{"class" => "col-md-6"}
-                %div{"class" => "input-group"}
-                  %span{"class" => "input-group-addon"} dstip
-                  %input{"type" => "text","class" => "form-control","v-model" => "dstip","name" => "dstip"}
-              %div{"class" => "col-md-6"}
-                %div{"class" => "input-group"}
-                  %span{"class" => "input-group-addon"} gateway
-                  %input{"type" => "text","class" => "form-control","v-model" => "gateway","name" => "gateway"}
-            %div{"class" => "col-md-2"}
-              %button{"class" => "btn btn-default"} Start New Gathering
+        %div.container#oGather
+          %input{"type" => "hidden","name" => "methodindex","v-model" => "index"}
+          %div{"class" => "btn-group col-md-1", "role" => "group"}
+            %button{'class' => 'btn btn-defualt dropdown-toggle', 'type' => 'button','id' => 'oSelect', 'data-toggle' => 'dropdown', 'aria-haspopup' => 'true','aria-expanded' => 'true'} {{message}}
+            %ul{"class" => "dropdown-menu", "aria-labelledby" => "oSelect"}
+              %li
+                %a{'href' => '#',"v-on:click" => "changeIndex(0)"} Method_A
+              %li
+                %a{'href' => '#',"v-on:click" => "changeIndex(1)"} Method_B
+              %li{'role' => 'separator', 'class' => 'divider'}
+              %li
+                %a{'href' => '#',"v-on:click" => "changeIndex(2)"} Method_C
+          %div{"v-if" => "index==2","class" => "col-md-7"}
+            %div{"class" => "col-md-6"}
+              %div{"class" => "input-group"}
+                %span{"class" => "input-group-addon"} dstip
+                %input{"type" => "text","class" => "form-control","v-model" => "dstip","name" => "dstip"}
+            %div{"class" => "col-md-6"}
+              %div{"class" => "input-group"}
+                %span{"class" => "input-group-addon"} gateway
+                %input{"type" => "text","class" => "form-control","v-model" => "gateway","name" => "gateway"}
+          %div{"class" => "col-md-2"}
+            %a{"href"=>"#","class" => "btn btn-default","v-on:click" => "startGather()"} Start New Gathering
+          %div{"class" => "col-md-2"}
+            %a{"href"=>"#","class" => "btn btn-default","v-on:click" => "turnToGather()"} Turn To Gathering
         %br
       - else
         %form{'accept-charset' => "UTF-8",action: "/packets/stopgather",method: "post"}

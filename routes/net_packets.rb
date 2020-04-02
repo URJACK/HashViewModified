@@ -5,6 +5,7 @@ ExecGatherFilePath = PacketsConfig['execgatherfilepath']
 CodeError = 233
 GatherThreadIdPool = {}
 GatherCountsPool = {}
+gatheringOperationId = 0;
 
 # "Status" means that the instance object of the "Operation" class is in the "Off" or "Open" state"
 StatusOpen = 1
@@ -253,27 +254,55 @@ end
 post '/packets/gather' do
   # methodindex will be send to the worker,means which method will be selected,but in the development environment,this param will be back to the frontend,
   # the frontend will use this param to simulate the different process of receiving packets
-  methodindex = params[:methodindex]
-  dstip = params[:dstip]
-  gateway = params[:gateway]
-  operation = Operations.new
-  operation[:starttime] = Time.new
-  operation[:status] = StatusOpen
-  operation[:methodindex] = methodindex
-  operation.save
-  @netpackets = []
-  @pageid = 1
-  @opid = operation.id
-  @pagesize = PageSize
-  @packetscount = 0
-  # create a sub process to gather infomation,and push its id into the "GTIP"
-  GatherThreadIdPool[operation.id] = spawn("#{ExecGatherFilePath} #{operation.id}")
-  haml :packets_index
+  result = {}
+
+  if gatheringOperationId == 0
+    methodindex = params[:methodindex]
+    dstip = params[:dstip]
+    gateway = params[:gateway]
+    operation = Operations.new
+    operation[:starttime] = Time.new
+    operation[:status] = StatusOpen
+    operation[:methodindex] = methodindex
+    operation.save
+    # @netpackets = []
+    # @pageid = 1
+    # @opid = operation.id
+    # @pagesize = PageSize
+    # @packetscount = 0
+    # create a sub process to gather infomation,and push its id into the "GTIP"
+    GatherThreadIdPool[operation.id] = spawn("#{ExecGatherFilePath} #{operation.id}")
+    gatheringOperationId = operation.id;
+    result["status"] = true;
+    result["id"] = gatheringOperationId;
+    return result.to_json
+  else
+    result["status"] = false;
+    result["id"] = gatheringOperationId;
+    return result.to_json;
+  end
+end
+
+get '/packets/turntogather' do
+  if gatheringOperationId != 0
+    @netpackets = NetPackets.where(opid: gatheringOperationId).limit(PageSize)
+    @packetscount = NetPackets.fetch("SELECT COUNT(id) AS len FROM netpackets WHERE opid = ?;",gatheringOperationId)[0][:len]
+    @pageid = 1
+    @opid = gatheringOperationId
+    @pagesize = PageSize
+    haml :packets_index
+  else
+    @err = "there's no gathering running,you can start a new gathering"
+    haml :packets_error
+  end
 end
 
 # this method will stop the specified "Operation" object
 post '/packets/stopgather' do
   opid = params[:opid].to_i
+  if opid == gatheringOperationId
+    gatheringOperationId = 0;
+  end
   operation = Operations.find(id: opid)
   if operation != nil
     methodindex = operation[:methodindex]
