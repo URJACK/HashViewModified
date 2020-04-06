@@ -202,6 +202,7 @@ Sequel.migration do
       # status Ops include '0' means not worked, '1' means worked
       Integer :status
       Integer :methodindex
+      Integer :number_t
       String :name
     end 
 

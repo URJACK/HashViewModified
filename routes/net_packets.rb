@@ -32,10 +32,11 @@ get '/packets' do
     @opid = opid
     @pagesize = PageSize
     @packetscount = GatherCountsPool[0]
+    @number_t = 0
     haml :packets_index
   else
-    @operation = Operations.find(id: opid)
-    if @operation != nil
+    operation = Operations.find(id: opid)
+    if operation != nil
       if GatherCountsPool[opid] == nil
         GatherCountsPool[opid] = NetPackets.fetch("SELECT COUNT(id) AS len FROM netpackets WHERE opid = ?;",opid)[0][:len]
       end
@@ -44,6 +45,7 @@ get '/packets' do
       @opid = opid
       @pagesize = PageSize
       @packetscount = GatherCountsPool[opid]
+      @number_t = operation[:number_t]
       haml :packets_index
     else
       @err = "this operation(opid:#{opid}) is not exist"
@@ -57,16 +59,28 @@ get '/packets/search' do
   @data = params[:data]
   @opid = params[:opid]
   page = params[:page]
-  if page == nil
+  page = page.to_i
+  if page == 0
     page = 1
   end
-  page = page.to_i
+
+  # @err = "#{@data} : #{@opid} : #{page}"
+  # haml :packets_error
   if @opid != nil && @opid != ""
     @netpackets = NetPackets.fetch("SELECT * FROM netpackets WHERE (srcip = ? OR srcport = ? OR dstip = ? OR dstport = ?) AND opid = ? limit ? offset ?;", @data,@data,@data,@data,@opid,PageSize,(page - 1) * PageSize)
   else
     @netpackets = NetPackets.fetch("SELECT * FROM netpackets WHERE srcip = ? OR srcport = ? OR dstip = ? OR dstport = ? limit ? offset ?;", @data,@data,@data,@data,PageSize,(page - 1) * PageSize)
   end  
   @pageid = page
+  @pagesize = PageSize
+  if @opid != nil && @opid != ""
+    @packetscount = GatherCountsPool[@opid]
+    operation = Operations.find(id: @opid);
+    @number_t = operation[:number_t]
+  else
+    @packetscount = GatherCountsPool[0]
+    @number_t = 0
+  end
   haml :packets_search
 end
 
@@ -264,6 +278,11 @@ post '/packets/gather' do
     operation[:starttime] = Time.new
     operation[:status] = StatusOpen
     operation[:methodindex] = methodindex
+    number = NetPackets.fetch("SELECT MAX(id) AS len FROM netpackets;")[0][:len];
+    if number == nil
+      number = 0
+    end
+    operation[:number_t] = number
     operation.save
     # @netpackets = []
     # @pageid = 1
@@ -285,11 +304,13 @@ end
 
 get '/packets/turntogather' do
   if gatheringOperationId != 0
+    operation = Operations.find(id: gatheringOperationId)
     @netpackets = NetPackets.where(opid: gatheringOperationId).limit(PageSize)
     @packetscount = NetPackets.fetch("SELECT COUNT(id) AS len FROM netpackets WHERE opid = ?;",gatheringOperationId)[0][:len]
     @pageid = 1
     @opid = gatheringOperationId
     @pagesize = PageSize
+    @number_t = operation[:number_t]
     haml :packets_index
   else
     @err = "there's no gathering running,you can start a new gathering"

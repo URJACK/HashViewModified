@@ -11,6 +11,7 @@
       var oldLen = #{@packetscount};
       var PageSize = #{@pagesize};
       var pageid = #{@pageid};
+      var number_t = #{@number_t};
       var basicChangeUrl = "#{basicChangeUrl}"
       var CommonWindowOnLoad = function(){
         //0:id 1:srcip 2:dstip 3:time 4:protocol
@@ -59,8 +60,8 @@
                 data:{
                   methodindex : this.index,
                   opid : "#{@opid}",
-                  fromid : this.fromid,
-                  toid : this.toid,
+                  fromid : parseInt(this.fromid) + number_t,
+                  toid : parseInt(this.toid) + number_t,
                   srcip : this.srcip,
                   dstip : this.dstip,
                   fromtime : this.fromtime,
@@ -149,7 +150,7 @@
         }
       }
       var fromTimeStampToString = function(stamp){
-        let datetime = new Date(stamp);
+        let datetime = new Date(parseInt(stamp));
         return datetime.toLocaleString();
       }
       var bootProcedureOfTimeStamp = function(){
@@ -181,10 +182,14 @@
         //let TYPE_INDEX = 13;
         //let PCAPPATH_INDEX = 9;
         let TYPE_INDEX = 9;
+        let READID_INDEX = 10;
         //element 'tr' will add data as its children
-        let trAppendTh = function(tr,data){
+        let trAppendTh = function(tr,data,styleName){
           let th = document.createElement('th');
           th.innerHTML = data;
+          if(arguments.length == 3){
+            th.style = styleName
+          }
           tr.appendChild(th)
         }
         let thAppendA = function(th,className,url,data){
@@ -199,7 +204,7 @@
             element = document.getElementById(datas[i].id)
             //to find the data which is needed to be changed
             if(element != null){
-              element.children[ID_INDEX].innerText = datas[i].id;
+              element.children[ID_INDEX].innerText = parseInt(datas[i].id) - number_t;
               //element.children[STARTTIME_INDEX].innerText = formZtoUTC(datas[i].starttime)
               //element.children[STOPTIME_INDEX].innerText = formZtoUTC(datas[i].stoptime)
               element.children[STARTTIME_INDEX].innerText = fromTimeStampToString(datas[i].starttime)
@@ -215,12 +220,13 @@
               //element.children[INFO_INDEX].innerText = datas[i].info;
               //element.children[PCAPPATH_INDEX].innerText = datas[i].pcappath;
               element.children[TYPE_INDEX].innerText = datas[i].type;
+              element.children[READID_INDEX].innerText = datas[i].id;
             }else{
               //it means that the datas didn't fill the view up.In other words,it can be filled with other datas
               if(tbody.childElementCount < PageSize && datas[i].opid == opid){
                 let tr = document.createElement('tr');
                 tr.id = datas[i].id
-                trAppendTh(tr,datas[i].id);
+                trAppendTh(tr,parseInt(datas[i].id) - number_t);
                 trAppendTh(tr,fromTimeStampToString(datas[i].starttime));
                 trAppendTh(tr,fromTimeStampToString(datas[i].stoptime));
                 trAppendTh(tr,datas[i].srcip);
@@ -231,6 +237,7 @@
                 trAppendTh(tr,datas[i].protocols);
                 //trAppendTh(tr,datas[i].pcappath);
                 trAppendTh(tr,datas[i].type);
+                trAppendTh(tr,parseInt(datas[i].id) - number_t,"display:none");
 
                 //let th = document.createElement('th')
                 //thAppendA(th,"btn btn-warning","/packets/edit?opid=#{@opid}&id=" + datas[i].id,"Edit")
@@ -280,18 +287,21 @@
           })
         }
         clock = setInterval(getDataFromServer,timeSpan)
+        var bootProcedureOfViewId = function(){
+          let length = tbody.childElementCount
+          for(let i = 0 ; i < length ; ++i){
+            tbody.children[0].children[0].innerText = parseInt(tbody.children[0].children[0].innerText) - number_t;
+          }
+        }
         window.onload = function(){
           CommonWindowOnLoad();
+          bootProcedureOfViewId();
         }
 
     - if @opid == nil
       :javascript
         //this value has the relationship with the html content,if you want to change the content in this array,you probably need to change the content located in this page's HTML
         let methodStrings = ["Method_A","Method_B","Method_C"]
-        //after each 10 seconds, this is page will try to get new data from the server
-        let gatherMethodChange = function(index){
-          console.log(index)
-        }
         window.onload = function(){
           var oGather = new Vue({
               el : '#oGather',
@@ -504,7 +514,10 @@
       %table.table.table-bordered.table-hover{"id" => "table"}
         %thead
           %tr
-            %th id
+            -if @opid == nil
+              %th id
+            -else
+              %th id(in gathering)
             %th starttime
             %th stoptime
             %th srcip
@@ -537,6 +550,7 @@
             %th #{packet.type}
             -# %th
             -#   %a{href: "/packets/edit?opid=#{@opid}&id=#{packet.id}",class: "btn btn-warning"} Edit
+            %th{"style"=>"display:none"} #{packet.id}
             %th
               %a{href: "/packets/delete?opid=#{@opid}&id=#{packet.id}",class: "btn btn-danger"} Delete
       %div{"class" => "alert alert-info","role" => "alert","id"=>"oInfo","v-if"=>"display"} {{info}}

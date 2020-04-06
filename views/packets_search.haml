@@ -2,18 +2,95 @@
 %html
   %header
     %script(src="/js/my.js")
-    
+    %script(src="/js/vue.js")
+    - if @opid != nil && @opid != "" then basicChangeUrl = "/packets/search?opid=#{@opid}&data=#{@data}&page="
+    - else basicChangeUrl = "/packets/search?data=#{@data}&page="
     :javascript
-      //after each 10 seconds, this is page will try to get new data from the server
-      let GETDATASPAN = 10000;
-      let clock = setInterval(getDataFromServer, GETDATASPAN);
+      var oInfo,oPagenumber,oTurnPage,maxpageid,tbody;
+      //"oldLen",will record the total nums of the netpackets(which opid equals the @opid)
+      var oldLen = #{@packetscount};
+      var PageSize = #{@pagesize};
+      var pageid = #{@pageid};
+      var number_t = #{@number_t};
+      var basicChangeUrl = "#{basicChangeUrl}"
+      var CommonWindowOnLoad = function(){
+        oInfo = new Vue({
+          el : '#oInfo',
+          data : {
+            info : "none",
+            display : false,
+            timer : null
+          },
+          methods : {
+            show : function(info){
+              let vu = this;
+              this.info = info;
+              this.display = true;
+              clearTimeout(this.timer)
+              this.timer = setTimeout(function(){
+                vu.display = false
+              },2200)
+            }
+          }
+        })
+        oPagenumber = document.getElementById("oPagenumber");
+        oTurnPage = document.getElementById("oTurnPage");
+        SetMaxPageSize()
+        tbody = document.getElementById("table").children[1]
+        if(tbody == null){
+          tbody = document.createElement('tbody');
+          document.getElementById("table").appendChild(tbody)
+        }
+        bootProcedureOfTimeStamp()
+      }
+      var SetMaxPageSize = function(){
+        maxpageid = Math.floor((oldLen-1)/PageSize) + 1;
+        if(maxpageid == 0){
+          maxpageid = 1;
+        }
+        oPagenumber.innerText = pageid + " / " + maxpageid
+      }
+      var turnpage = function(){
+        if(oTurnPage.value < 1){
+          oInfo.show("the pageid can't be smaller than 1")
+        }else if(oTurnPage.value > maxpageid){
+          oInfo.show("the pageid can't be bigger than maxpageid")
+        }else{
+          location.href = basicChangeUrl + oTurnPage.value
+        }
+      }
+      var fromTimeStampToString = function(stamp){
+        let datetime = new Date(parseInt(stamp));
+        return datetime.toLocaleString();
+      }
+      var bootProcedureOfTimeStamp = function(){
+        for(let i = 0 ; i < tbody.childElementCount ; ++i){
+          tbody.children[i].children[1].innerText = fromTimeStampToString(tbody.children[i].children[1].innerText);
+          tbody.children[i].children[2].innerText = fromTimeStampToString(tbody.children[i].children[2].innerText);
+        }
+      }
+      window.onload = CommonWindowOnLoad
   %body
     .container
+      - if @opid != nil && @opid != ""
+        %h3 
+          %span.label.label-default Homepage 
+          %span.label.label-success >
+          %span.label.label-default Operation: #{@opid}
+          %span.label.label-success >
+          %span.label.label-default #{@data}
+      - else
+        %h3
+          %span.label.label-default Homepage
+          %span.label.label-success >
+          %span.label.label-default #{@data}
+
       - if @opid != nil && @opid != ""
         %h1 Homepage > Operation: #{@opid} > Search: #{@data}. 
       - else
         %h1 Homepage > Search: #{@data}.
-      %table.table.table-bordered.table-hover
+
+      %table.table.table-bordered.table-hover{"id" => "table"}
         %thead
           %tr
             %th id
@@ -35,19 +112,29 @@
             %th #{packet.srcport}
             %th #{packet.dstport}
             %th #{packet.packets}
-            %th
-              %a{href: "/packets/edit?id=#{packet.id}",class: "btn btn-warning"} Edit
+            -# %th
+            -#   %a{href: "/packets/edit?id=#{packet.id}",class: "btn btn-warning"} Edit
+            %th{"style"=>"display:none"} #{packet.id}
             %th
               %a{href: "/packets/delete?id=#{packet.id}",class: "btn btn-danger"} Delete
-      - if @opid != nil && @opid != "" then basicChangeUrl = "/packets/search?opid=#{@opid}&data="
-      - else basicChangeUrl = "/packets/search?data="
-      %p
-        - if @pageid > 1
-          %a{href: "#{basicChangeUrl}#{@data}&page=#{@pageid - 1}",class: "btn btn-warning"} Left
-        - else
-          %a{href: "#{basicChangeUrl}#{@data}&page=#{@pageid}",class: "btn btn-default"} Left
-        %span.label.label-info #{@pageid}
-        %a{href: "#{basicChangeUrl}#{@data}&page=#{@pageid + 1}",class: "btn btn-danger"} Right
+
+      %div{"class" => "alert alert-info","role" => "alert","id"=>"oInfo","v-if"=>"display"} {{info}}
+
+      %div.container
+        %div.col-md-2
+          - if @pageid > 1
+            %a{href: "#{basicChangeUrl}#{@pageid - 1}",class: "btn btn-warning"} Left
+          - else
+            %a{href: "#{basicChangeUrl}#{@pageid}",class: "btn btn-default"} Left
+          %span.label.label-info#oPagenumber #{@pageid}
+          %a{href: "#{basicChangeUrl}#{@pageid + 1}",class: "btn btn-danger"} Right
+        %div.col-md-3
+          %diu.input-group
+            %span{"class"=>"input-group-addon"}Turn to Page
+            %input{"type"=>"number","class"=>"form-control","id"=>"oTurnPage"}
+        %div.col-md-1
+          %button{"class"=>"btn btn-default","onclick"=>"turnpage()"} Go
+
       - if @opid != nil && @opid != "" then
         %a{href: "/packets?opid=#{@opid}",class: "btn btn-primary"} Back to List
       - else
