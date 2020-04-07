@@ -91,6 +91,19 @@
       }
     })
   }
+  let clearData = function(){
+    $.ajax({
+      url:"/packets/cleardata",
+      data:null,
+      method:"POST",
+      success:function(data){
+        alert(data)
+      },
+      error:function(){
+        console.log("failed!!")
+      }
+    })
+  }
 
 %div= @data
 Here we're going to create Fake Data
@@ -106,9 +119,11 @@ Here we're going to create Fake Data
   input createSpan(min : 1000)
   %input{type:"number",id:"sendspan",value:"5000"}
 %p
-  %input{type:"button",class:"btn btn-warning",onclick:"debugSend()",value:"start creating"}
+  %input{type:"button",class:"btn btn-danger",onclick:"clearData()",value:"clear data"}
 %p
-  %input{type:"button",class:"btn btn-danger",onclick:"stopDebugSend()",value:"stop Creating"}
+  %input{type:"button",class:"btn btn-primary",onclick:"debugSend()",value:"start creating"}
+%p
+  %input{type:"button",class:"btn btn-warning",onclick:"stopDebugSend()",value:"stop Creating"}
 %p
   creating Status :
   %span.label.label-default{id:"status"} close

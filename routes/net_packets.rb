@@ -108,33 +108,37 @@ post '/packets/create' do
   netpacket.type = params[:type]
   netpacket.opid = params[:opid]
   opid = params[:opid].to_i
-  if netpacket.save
-    msg = Messages.new
-    msg.pid = netpacket.id;
-    msg.deadtime = Time.new + MessageSurvivingTime
-    msg.save
-    if GatherCountsPool[0] == nil
-      GatherCountsPool[0] = NetPackets.fetch("SELECT COUNT(id) AS len FROM netpackets;")[0][:len]
+  if opid == gatheringOperationId
+    if netpacket.save
+      msg = Messages.new
+      msg.pid = netpacket.id;
+      msg.deadtime = Time.new + MessageSurvivingTime
+      msg.save
+      if GatherCountsPool[0] == nil
+        GatherCountsPool[0] = NetPackets.fetch("SELECT COUNT(id) AS len FROM netpackets;")[0][:len]
+      else
+        GatherCountsPool[0] = GatherCountsPool[0] + 1;
+      end
+      if GatherCountsPool[opid] != nil
+        GatherCountsPool[opid] = GatherCountsPool[opid] + 1
+      else
+        GatherCountsPool[opid] = NetPackets.fetch("SELECT COUNT(id) AS len FROM netpackets WHERE opid = ?;",opid)[0][:len]
+      end
+      if params[:ajax].to_i == 0
+        redirect "/packets?opid=#{params[:opid]}"
+      else
+        return netpacket.id.to_s
+      end
     else
-      GatherCountsPool[0] = GatherCountsPool[0] + 1;
-    end
-    if GatherCountsPool[opid] != nil
-      GatherCountsPool[opid] = GatherCountsPool[opid] + 1
-    else
-      GatherCountsPool[opid] = NetPackets.fetch("SELECT COUNT(id) AS len FROM netpackets WHERE opid = ?;",opid)[0][:len]
-    end
-    if params[:ajax].to_i == 0
-      redirect "/packets?opid=#{params[:opid]}"
-    else
-      return netpacket.id.to_s
+      if params[:ajax].to_i == 0
+        @err = "saving data is not successful"
+        haml :packets_error
+      else
+        return false.to_s
+      end
     end
   else
-    if params[:ajax].to_i == 0
-      @err = "saving data is not successful"
-      haml :packets_error
-    else
-      return false.to_s
-    end
+    return false.to_s
   end
 end
 
@@ -382,6 +386,29 @@ post '/packets/refresh' do
   results["arr"] = arr
   results["len"] = len
   return results.to_json
+end
+
+post '/packets/cleardata' do
+  # NetPackets.run("delete from netpackets;")
+  # NetPackets.run("alter table netpackets AUTO_INCREMENT 1;")
+  # Operations.run("truncate operations;")
+  # Messages
+  HVDB.run("truncate netpackets;")
+  HVDB.run("truncate operations;")
+  HVDB.run("truncate messages;")
+
+  pid = GatherThreadIdPool[gatheringOperationId]
+  # to stop the sub process
+  if pid != nil
+    `kill #{pid}`
+  end
+
+  GatherCountsPool.clear
+  GatherCountsPool[0] = 0
+
+  gatheringOperationId = 0
+
+  return "clear success"
 end
 
 get '/packets/debug' do
