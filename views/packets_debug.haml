@@ -1,6 +1,7 @@
 %script(src="/js/my.js")
 :javascript
   let oTime;
+  let oO
   window.onload = function(){
     oTime = document.getElementById("time");
   }
@@ -104,6 +105,29 @@
       }
     })
   }
+  let createBigPackets = function(){
+    $.ajax({
+      url:"/packets/debugbigpackets",
+      data:{
+        opid:document.getElementById("opid2").value,
+        pcappath:document.getElementById("pcappath").value
+      },
+      method:"POST",
+      success:function(data){
+        if(typeof data != "object"){
+          data = JSON.parse(data);
+        }
+        if(data.status){
+          console.log(data.info)
+        }else{
+          alert("operation is not exist");
+        }
+      },
+      error:function(){
+        console.log("failed!!")
+      }
+    })
+  }
 
 %div= @data
 Here we're going to create Fake Data
@@ -119,11 +143,19 @@ Here we're going to create Fake Data
   input createSpan(min : 1000)
   %input{type:"number",id:"sendspan",value:"5000"}
 %p
-  %input{type:"button",class:"btn btn-danger",onclick:"clearData()",value:"clear data"}
-%p
   %input{type:"button",class:"btn btn-primary",onclick:"debugSend()",value:"start creating"}
 %p
   %input{type:"button",class:"btn btn-warning",onclick:"stopDebugSend()",value:"stop Creating"}
 %p
   creating Status :
   %span.label.label-default{id:"status"} close
+%p
+  %input{type:"button",class:"btn btn-danger",onclick:"clearData()",value:"clear data"}
+%p
+  input Operation Id
+  %input{type:"number",id:"opid2"}
+%p
+  input Big Packets Path
+  %input{type:"text",id:"pcappath"}
+%p
+  %input{type:"button",class:"btn btn-primary",onclick:"createBigPackets()",value:"Create Big Packets"}

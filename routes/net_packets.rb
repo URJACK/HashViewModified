@@ -30,12 +30,13 @@ get '/packets' do
     @netpackets = NetPackets.limit(PageSize).offset((page - 1) * PageSize)
     @pageid = page
     @opid = opid
+    @opstatus = StatusClose
     @pagesize = PageSize
     @packetscount = GatherCountsPool[0]
     @number_t = 0
     haml :packets_index
   else
-    operation = Operations.find(id: opid)
+    operation = Operations.first(id: opid)
     if operation != nil
       if GatherCountsPool[opid] == nil
         GatherCountsPool[opid] = NetPackets.fetch("SELECT COUNT(id) AS len FROM netpackets WHERE opid = ?;",opid)[0][:len]
@@ -43,6 +44,7 @@ get '/packets' do
       @netpackets = NetPackets.where(opid: opid).limit(PageSize).offset((page - 1) * PageSize)
       @pageid = page
       @opid = opid
+      @opstatus = operation[:status]
       @pagesize = PageSize
       @packetscount = GatherCountsPool[opid]
       @number_t = operation[:number_t]
@@ -205,6 +207,7 @@ Method_SrcIp = 1
 Method_DstIp = 2
 Method_Time = 3
 Method_Protocol = 4
+Method_Opid = 5
 # this variable(ExportFilePath) probably need to be changed by each machine
 ExportFilePath = PacketsConfig['exportfilepath']
 RequestFilePath = "https://127.0.0.1:4567/packets/download?file="
@@ -221,6 +224,7 @@ post '/packets/export' do
   fromtime = params[:fromtime]
   totime = params[:totime]
   protocol = params[:protocol]
+  result = {}
   # fileId.tar will be created
   fileId = (rand*100).to_i
   if methodindex.to_i == Method_Id
@@ -234,7 +238,9 @@ post '/packets/export' do
   elsif methodindex.to_i == Method_Protocol
     packets = NetPackets.fetch("SELECT * FROM netpackets WHERE protocols = ?",protocol)
   else
-    return ""
+    result["data"] = ""
+    result["status"] = false
+    return result.to_json
   end
   tarStr = "tar zcvf #{ExportFilePath}#{fileId}.tar"
   if packets != nil
@@ -255,10 +261,67 @@ post '/packets/export' do
       tarStr += " -C #{dirStr} #{fileStr}"
     end
     `#{tarStr}`
-    return "#{RequestFilePath}#{fileId}.tar"
+    result["data"] = "#{RequestFilePath}#{fileId}.tar"
+    result["status"] = true
   else
-    return ""
+    result["data"] = ""
+    result["status"] = false
   end
+  return result
+end
+
+# export the full packets
+post '/packets/export2' do
+  methodindex = params[:methodindex]
+  opid = params[:opid]
+  fromtime = params[:fromtime]
+  totime = params[:totime]
+  result = {}
+  packetsArr = []
+  if methodindex.to_i == Method_Time
+    operations = Operations.fetch("SELECT * FROM operations WHERE starttime >= ? AND stoptime <= ?",fromtime,totime)
+    operations.each do |op|
+      if op[:status] == StatusClose
+        packetsArr.push OperationPackets.fetch("SELECT * FROM operationpackets WHERE opid = ?",op[:id])
+      end
+    end
+  elsif methodindex.to_i == Method_Opid
+    operation = Operations.find(id: opid)
+    if operation == nil 
+      result["status"] = false
+      result["data"] = "can't find this operation"
+    elsif operation[:status] == StatusOpen
+      result["status"] = false
+      result["data"] = "this operations is still running,please stop it first,and try to export the datas after that."
+    else
+      packetsArr.push OperationPackets.fetch("SELECT * FROM operationpackets WHERE opid = ?",opid)
+    end
+  end
+
+  fileId = (rand*100).to_i
+  tarStr = "tar zcvf #{ExportFilePath}#{fileId}.tar"
+  packetsArr.each do |packets|
+    packets.each do |pkt|
+      arr = pkt[:pcappath].split('/')
+      if arr.size == 0
+        # it means it didn't have the pcappath
+        break
+      end
+      fileStr = arr[arr.size - 1]
+      dirStr = ""
+      arr.each do |ele|
+        if ele != fileStr
+          dirStr += '/'
+          dirStr += ele
+        end
+      end
+      tarStr += " -C #{dirStr} #{fileStr}"
+    end
+    `#{tarStr}`
+    result["data"] = "#{RequestFilePath}#{fileId}.tar"
+    result["status"] = true
+  end
+  return result.to_json
 end
 
 get '/packets/download' do
@@ -313,6 +376,7 @@ get '/packets/turntogather' do
     @packetscount = NetPackets.fetch("SELECT COUNT(id) AS len FROM netpackets WHERE opid = ?;",gatheringOperationId)[0][:len]
     @pageid = 1
     @opid = gatheringOperationId
+    @opstatus = operation[:status]
     @pagesize = PageSize
     @number_t = operation[:number_t]
     haml :packets_index
@@ -396,7 +460,13 @@ post '/packets/cleardata' do
   HVDB.run("truncate netpackets;")
   HVDB.run("truncate operations;")
   HVDB.run("truncate messages;")
+  HVDB.run("truncate operationpackets;")
 
+  operation = Operations.find(id: gatheringOperationId)
+  if operation != nil
+    operation[:status] = StatusClose
+    operation.save
+  end
   pid = GatherThreadIdPool[gatheringOperationId]
   # to stop the sub process
   if pid != nil
@@ -414,6 +484,24 @@ end
 get '/packets/debug' do
   @data = params[:data]
   haml :packets_debug
+end
+
+post '/packets/debugbigpackets' do
+  opid = params[:opid].to_i;
+  pcappath = params[:pcappath].gsub("&#x2F;","/");
+  operation = Operations.find(id: opid)
+  result = {}
+  if operation == nil
+    result["status"] = false
+  else
+    bigPacket = OperationPackets.new
+    bigPacket[:opid] = opid
+    bigPacket[:pcappath] = pcappath
+    bigPacket.save
+    result["info"] = "#{opid} have received a new big packet(pcappath:'#{pcappath}')"
+    result["status"] = true
+  end
+  return result.to_json
 end
 
 post '/packets/debug2' do

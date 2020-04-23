@@ -5,6 +5,8 @@
     %script(src="/js/vue.js")
     - if @opid == nil then basicChangeUrl = "/packets?page="
     - else basicChangeUrl = "/packets?opid=#{@opid}&page="
+    - if @opid != nil then opidisnull = false
+    - else opidisnull = true
     :javascript
       var oExport,oInfo,oPagenumber,oTurnPage,maxpageid,tbody;
       //"oldLen",will record the total nums of the netpackets(which opid equals the @opid)
@@ -13,11 +15,19 @@
       var pageid = #{@pageid};
       var number_t = #{@number_t};
       var basicChangeUrl = "#{basicChangeUrl}"
+      var opidisnull = #{opidisnull};
+      var EXPORT_ID = 0;
+      var EXPORT_SRCIP = 1;
+      var EXPORT_DSTIP = 2;
+      var EXPORT_TIME = 3;
+      var EXPORT_PROTOCOL = 4;
+      var EXPORT_OPID = 5;
       var CommonWindowOnLoad = function(){
         //0:id 1:srcip 2:dstip 3:time 4:protocol
         oExport = new Vue({
           el : '#oExport',
           data : {
+              opidisnull : opidisnull,
               index : 0,
               fromid : 0,
               toid : 0,
@@ -30,23 +40,26 @@
               message_ender : "Do it",
               isReceive : false,
               receiveDataLink : ""
-
           },
           methods: {
             changeIndex : function (nindex) {
               oindex = this.index;
               if(oindex != nindex){
                 //index has changed
-                if(nindex == 0){
+                if(nindex == EXPORT_ID){
                   this.message = "Export By Id"
-                }else if(nindex == 1){
+                }else if(nindex == EXPORT_SRCIP){
                   this.message = "Export By SrcIp"
-                }else if(nindex == 2){
+                }else if(nindex == EXPORT_DSTIP){
                   this.message = "Export By DstIp"
-                }else if(nindex == 3){
+                }else if(nindex == EXPORT_TIME){
                   this.message = "Export By Time"
-                }else{
+                }else if(nindex == EXPORT_PROTOCOL){
                   this.message = "Export By Protocol"
+                }else if(nindex == EXPORT_OPID){
+                  this.message = "Export This Gathering"
+                }else{
+                  this.message = "Unknown Exporting Action"
                 }
               }
               this.index = nindex;
@@ -55,8 +68,18 @@
               let vu = this;
               this.resetOtherValue();
               this.isReceive = false;
+              let sendUrl = "/packets/export";
+              if(opidisnull){
+                if(this.index == EXPORT_TIME){
+                  sendUrl = "/packets/export2";
+                }
+              }else{
+                if(this.index == EXPORT_OPID){
+                  sendUrl = "/packets/export2";
+                }
+              }
               $.ajax({
-                url:"/packets/export",
+                url:sendUrl,
                 data:{
                   methodindex : this.index,
                   opid : "#{@opid}",
@@ -70,9 +93,16 @@
                 },
                 method:"POST",
                 success:function(data){
-                  console.log(data)
-                  vu.isReceive = true;
-                  vu.receiveDataLink = data
+                  if(typeof data != 'object'){
+                    data = JSON.parse(data);
+                  }
+                  console.log(data);
+                  if(data.status){
+                    vu.isReceive = true;
+                    vu.receiveDataLink = data.data
+                  }else{
+                    oInfo.show(data.data);
+                  }
                 },
                 error:function(){
                   console.log("failed!!")
@@ -406,7 +436,7 @@
           %div{"class" => "col-md-2"}
             %a{"href"=>"#","class" => "btn btn-default","v-on:click" => "turnToGather()"} Turn To Gathering
         %br
-      - else
+      - elsif @opstatus == 1
         %form{'accept-charset' => "UTF-8",action: "/packets/stopgather",method: "post"}
           %input{"type" => "hidden","name" => "opid","value" => "#{@opid}"}
           %div.container
@@ -449,6 +479,9 @@
                         %a{'href' => '#',"v-on:click" => "changeIndex(3)"} ExportBy_Time
                       %li
                         %a{'href' => '#',"v-on:click" => "changeIndex(4)"} ExportBy_Protocol
+                      %li{'role' => 'separator', 'class' => 'divider'}
+                      %li
+                        %a{'href' => '#',"v-if" => "opidisnull == false","v-on:click" => "changeIndex(5)"} Export This Gathering
                   %br
                   %br
                   %div{"v-if" => "index==0"}

@@ -191,3 +191,7 @@ end
 class Messages < Sequel::Model(:messages)
 
 end
+
+class OperationPackets < Sequel::Model(:operationpackets)
+  
+end

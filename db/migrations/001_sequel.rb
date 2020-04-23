@@ -232,5 +232,11 @@ Sequel.migration do
       Integer :pid
     end
 
+    create_table(:operationpackets) do
+      primary_key :id, type: :Bignum
+      String :pcappath, size: 50
+      Integer :opid
+    end
+
   end
 end
