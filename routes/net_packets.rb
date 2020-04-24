@@ -144,6 +144,24 @@ post '/packets/create' do
   end
 end
 
+post '/packets/createbigpackets' do
+  opid = params[:opid].to_i;
+  pcappath = params[:pcappath].gsub("&#x2F;","/");
+  operation = Operations.find(id: opid)
+  result = {}
+  if operation == nil
+    result["status"] = false
+  else
+    bigPacket = OperationPackets.new
+    bigPacket[:opid] = opid
+    bigPacket[:pcappath] = pcappath
+    bigPacket.save
+    result["info"] = "#{opid} have received a new big packet(pcappath:'#{pcappath}')"
+    result["status"] = true
+  end
+  return result.to_json
+end
+
 # draw the view of editing a net-packet
 get '/packets/edit' do
   @netpacket = NetPackets.find(id: params[:id].to_i)
@@ -484,24 +502,6 @@ end
 get '/packets/debug' do
   @data = params[:data]
   haml :packets_debug
-end
-
-post '/packets/debugbigpackets' do
-  opid = params[:opid].to_i;
-  pcappath = params[:pcappath].gsub("&#x2F;","/");
-  operation = Operations.find(id: opid)
-  result = {}
-  if operation == nil
-    result["status"] = false
-  else
-    bigPacket = OperationPackets.new
-    bigPacket[:opid] = opid
-    bigPacket[:pcappath] = pcappath
-    bigPacket.save
-    result["info"] = "#{opid} have received a new big packet(pcappath:'#{pcappath}')"
-    result["status"] = true
-  end
-  return result.to_json
 end
 
 post '/packets/debug2' do
